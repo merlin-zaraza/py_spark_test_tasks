@@ -1,0 +1,60 @@
+x-spark-worker:
+
+  environment:
+    &spark-worker-env
+    SPARK_MASTER : spark://spark-master:7077
+    SPARK_WORKER_CORES : 2
+    SPARK_WORKER_MEMORY : 2G
+    SPARK_DRIVER_MEMORY : 1G
+    SPARK_EXECUTOR_MEMORY : 1G
+    SPARK_WORKLOAD : worker
+
+  depends_on:
+    - spark-master
+
+x-spark-common:
+  &spark-common
+  image: ${DOCKER_SPARK_IMAGE:-'cluster-apache-spark:3.0.2'}
+  volumes:
+    - ./apps:/opt/spark-apps
+    - ./data:/opt/spark-data
+
+services:
+
+  spark-master:
+    <<: *spark-common
+    ports:
+      - "9090:8080"
+      - "7077:7077"
+    environment:
+      - SPARK_LOCAL_IP=spark-master
+      - SPARK_WORKLOAD=master
+
+  spark-worker-a:
+    <<: *spark-common
+    environment:
+      <<: *spark-worker-env
+      SPARK_LOCAL_IP: spark-worker-a
+    ports:
+      - "9091:8080"
+      - "7000:7000"
+    depends_on:
+      - spark-master
+
+  spark-worker-b:
+    <<: *spark-common
+    environment:
+      <<: *spark-worker-env
+      SPARK_LOCAL_IP: spark-worker-b
+    ports:
+      - "9092:8080"
+      - "7001:7000"
+    depends_on:
+      - spark-master
+
+#  demo-database:
+#    image: postgres:11.7-alpine
+#    ports:
+#      - "5432:5432"
+#    environment:
+#      - POSTGRES_PASSWORD=casa1234
