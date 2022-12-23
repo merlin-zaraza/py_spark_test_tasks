@@ -61,5 +61,6 @@ ln -sf /dev/stdout $SPARK_WORKER_LOG
 
 COPY bash/start-spark.sh /
 COPY bash/.bashrc /root/.bashrc
+COPY bash/log4j.properties /opt/spark/conf/log4j.properties
 
 CMD ["/bin/bash", "/start-spark.sh"]
