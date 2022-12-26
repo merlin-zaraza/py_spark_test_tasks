@@ -1,2 +1,5 @@
 *.csv
 .idea
+*.parquet
+*.crc
+_SUCCESS
