@@ -4,7 +4,7 @@ Package for running direct sql on files
 import pathlib
 import argparse
 import os
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, DataFrame
 
 _TRUE_STR: str = "true"
 _DATA_FOLDER: str = os.environ.get("SPARK_DATA", "/opt/spark-data")
@@ -61,35 +61,90 @@ def fn_init_tables(*args):
         fn_create_df_from_csv_file(in_file_name=l_one_file)
 
 
-def fn_run_task(in_tgt_folder: str, in_sql: str,
-                in_task_group_id: int = 1, in_repartition_tgt: int = 1):
+def fn_get_task_target_folder(in_tgt_folder: str,
+                              in_task_group_id: int,
+                              in_code_type: str):
+    return f"{_DATA_FOLDER}/{in_code_type}/task{in_task_group_id}/{in_tgt_folder}"
+
+
+def fn_run_task_sql(in_tgt_folder: str,
+                    in_sql: str,
+                    in_task_group_id: int = 1,
+                    in_repartition_tgt: int = None):
     """
     Function to run 1 SQL
     """
-    l_df = _SPARK_SESSION.sql(in_sql) \
-        .repartition(in_repartition_tgt)
+    l_df = _SPARK_SESSION.sql(in_sql)
+
+    if in_repartition_tgt > 0:
+        l_df.repartition(in_repartition_tgt)
 
     l_df.explain(extended=False)
 
-    l_df.write.mode('overwrite') \
-        .parquet(f"{_DATA_FOLDER}/task{in_task_group_id}/{in_tgt_folder}")
+    l_path = fn_get_task_target_folder(in_tgt_folder=in_tgt_folder,
+                                       in_task_group_id=in_task_group_id,
+                                       in_code_type="sql")
+
+    l_df.write.mode('overwrite').parquet(l_path)
+
+
+def fn_run_task_df(in_tgt_folder: str,
+                   in_data_frame: DataFrame,
+                   in_task_group_id: int = 1,
+                   in_repartition_tgt: int = None):
+    """
+    Function to explain and run one DF
+    """
+    l_df = in_data_frame
+
+    if in_repartition_tgt > 0:
+        l_df.repartition(in_repartition_tgt)
+
+    l_df.explain(extended=False)
+
+    l_path = fn_get_task_target_folder(in_tgt_folder=in_tgt_folder,
+                                       in_task_group_id=in_task_group_id,
+                                       in_code_type="df")
+
+    l_df.write.mode('overwrite').parquet(l_path)
+
+
+def fn_get_tasks_range(in_task_group_id: int):
+    l_default_range = range(1, 5)
+
+    if in_task_group_id is None:
+        l_range = l_default_range
+    else:
+        if in_task_group_id not in l_default_range:
+            raise ValueError(f"in_task_group_id is out of range : {in_task_group_id} not in {l_default_range}")
+
+        l_range = range(in_task_group_id, in_task_group_id + 1)
+
+    return l_range
+
+
+def fn_init(in_init_all_tables: bool = False):
+    global _SPARK_SESSION
+    _SPARK_SESSION = SparkSession.builder.appName("py_spark_tasks_sql").getOrCreate()
+
+    if in_init_all_tables:
+        fn_init_tables('accounts',
+                       'transactions',
+                       'country_abbreviation')
+
+
+def fn_close_session():
+    _SPARK_SESSION.stop()
 
 
 def fn_run_task_group(in_task_group_id: int):
     """
     Function to run SQLs in task folder
     """
-    global _SPARK_SESSION
-    _SPARK_SESSION = SparkSession.builder.appName("py_spark_tasks").getOrCreate()
 
-    fn_init_tables('accounts',
-                   'transactions',
-                   'country_abbreviation')
+    fn_init(in_init_all_tables=True)
 
-    if in_task_group_id is None:
-        l_range = range(1, 5)
-    else:
-        l_range = range(in_task_group_id, in_task_group_id + 1)
+    l_range = fn_get_tasks_range(in_task_group_id)
 
     for l_one_task_group_id in l_range:
         l_task_sql_folder = f"{_APPS_FOLDER}/sql/task{l_one_task_group_id}"
@@ -106,11 +161,12 @@ def fn_run_task_group(in_task_group_id: int):
                 with l_items.open(mode="r") as l_sql_file:
                     l_sql_file_content = l_sql_file.read()
 
-                    fn_run_task(in_tgt_folder=l_sql_file_name,
-                                in_sql=l_sql_file_content,
-                                in_task_group_id=l_one_task_group_id)
+                    fn_run_task_sql(in_tgt_folder=l_sql_file_name,
+                                    in_sql=l_sql_file_content,
+                                    in_task_group_id=l_one_task_group_id,
+                                    in_repartition_tgt=1)
 
-    _SPARK_SESSION.stop()
+    fn_close_session()
 
 
 if __name__ == "__main__":
