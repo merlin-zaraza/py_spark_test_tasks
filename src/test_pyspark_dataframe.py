@@ -100,6 +100,10 @@ def fn_get_task3_def_list():
         .agg(f.round(f.avg("amount"),
                      2).alias("avg_amount"))
 
+    l_df_account_types_count = l_transactions_df \
+        .groupBy(f.col("account_type")) \
+        .agg(f.count("account_type").alias("cnt"))
+
     l_df_top_10_positive = l_transactions_df.where("amount > 0") \
         .groupBy("id") \
         .agg(f.round(f.sum("amount"),
@@ -114,6 +118,7 @@ def fn_get_task3_def_list():
     return [
         TaskDf("3.1_first_last_concatenated", l_df_first_last_concatenated),
         TaskDf("3.2_avg_transaction_amount_2021_per_client", l_df_avg_transaction_amount_2021_per_client),
+        TaskDf("3.3_account_types_count", l_df_account_types_count),
         TaskDf("3.4_top_10_positive", l_df_top_10_positive),
         TaskDf("3.5_clients_sorted_by_first_name_descending", l_df_clients_sorted_by_first_name_descending),
     ]
