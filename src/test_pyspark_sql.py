@@ -116,10 +116,16 @@ def fn_run_task(in_tgt_folder: str,
     if (in_repartition_tgt is not None) and in_repartition_tgt > 0:
         l_df.repartition(in_repartition_tgt) \
             .write.mode(in_mode) \
-            .parquet(l_path)
+            .option("header", _TRUE_STR) \
+            .option("inferSchema", _TRUE_STR) \
+            .option("sep", _SEPARATOR) \
+            .csv(l_path)
     else:
         l_df.write.mode(in_mode) \
-            .parquet(l_path)
+            .option("header", _TRUE_STR) \
+            .option("inferSchema", _TRUE_STR) \
+            .option("sep", _SEPARATOR) \
+            .csv(l_path)
 
     l_df.show()
 
