@@ -1,9 +1,9 @@
 with total as (
     Select id,
-           account_type,
+           concat_ws(",", collect_list(account_type)) as account_types,
            Round(SUM(amount), 2) as total_amount
     From transactions
-    Group by id, account_type
+    Group by id
 )
 select /*+ Broadcast(a,c) */
     t.id,
@@ -11,7 +11,7 @@ select /*+ Broadcast(a,c) */
     a.last_name,
     c.country_full_name,
     t.total_amount,
-    t.account_type
+    t.account_types
 from
      total t
 JOIN accounts a
