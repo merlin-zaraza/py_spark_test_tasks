@@ -2,7 +2,7 @@
 <module type="JAVA_MODULE" version="4">
   <component name="FacetManager">
     <facet type="Python" name="Python">
-      <configuration sdkName="Remote Python 3.7.3 Docker (cluster-apache-spark:3.0.2)" />
+      <configuration sdkName="Python 3.10" />
     </facet>
   </component>
   <component name="NewModuleRootManager" inherit-compiler-output="true">
@@ -11,8 +11,8 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/src/sql" />
     </content>
-    <orderEntry type="jdk" jdkName="1.8" jdkType="JavaSDK" />
+    <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="library" name="Remote Python 3.7.3 Docker (cluster-apache-spark:3.0.2) interpreter library" level="application" />
+    <orderEntry type="library" name="Python 3.10 interpreter library" level="application" />
   </component>
 </module>

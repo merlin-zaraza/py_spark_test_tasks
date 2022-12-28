@@ -9,7 +9,7 @@ ARG SPARK_VERSION
 ARG HADOOP_VERSION
 
 RUN apt-get update && apt-get install -y curl vim wget software-properties-common \
-                                         ssh net-tools ca-certificates \
+                                         ssh net-tools ca-certificates iputils-ping\
                                          python3 python3-pip python3-numpy \
                                          python3-matplotlib python3-scipy \
                                          python3-pandas python3-simpy
@@ -45,9 +45,9 @@ SPARK_WORKER_WEBUI_PORT=8080 \
 SPARK_WORKER_PORT=7000 \
 SPARK_MASTER="spark://spark-master:7077" \
 SPARK_WORKLOAD="master" \
-PYSPARK_PYTHON=/usr/bin/python\
-PATH="$PATH:$PYSPARK_PYTHON"\
-PATH="$PATH:/opt/spark/bin"
+PYTHON_PATH=$SPARK_HOME/python:$PYTHON_PATH \
+PYSPARK_PYTHON=python3 \
+PATH="$PATH:$SPARK_HOME/bin"
 
 
 EXPOSE 8080 7077 6066

@@ -26,6 +26,7 @@ services:
     ports:
       - "9090:8080"
       - "7077:7077"
+      - "80:80"
     environment:
       - SPARK_LOCAL_IP=spark-master
       - SPARK_WORKLOAD=master
