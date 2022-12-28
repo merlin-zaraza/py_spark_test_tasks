@@ -30,16 +30,16 @@ function fn_run_command() {
   fi
 }
 
+fn_run_command "docker compose down" \
+               "Cannot Stop project"\
+               "20"\
+               "n"
+
 if [[ "$L_IN_BUILD_IMAGE" == 'y' ]]; then
   fn_run_command "docker build --build-arg SPARK_VERSION=$L_IN_SPARK_VERSION --build-arg HADOOP_VERSION=$L_IN_HADOOP_VERSION -t $DOCKER_SPARK_IMAGE ../ "\
                  "Cannot build image"\
                  "10"
 fi
-
-fn_run_command "docker compose down" \
-               "Cannot Stop project"\
-               "20"\
-               "n"
 
 fn_run_command "docker compose up -d" \
                "Cannot Start project"\
