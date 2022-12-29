@@ -12,12 +12,12 @@ with t as (
      where a.age < 26
  )
 select /*+ Broadcast(a) */
-    a.id,
+    a.id as account_id,
     a.first_name,
     a.last_name,
     a.age,
     a.country,
-    t.id as account_id,
+    t.id,
     t.amount,
     t.account_type,
     t.transaction_date

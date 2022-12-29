@@ -14,8 +14,8 @@ ACCOUNTS = 'accounts'
 TRANSACTIONS = 'transactions'
 COUNTRY_ABBREVIATION = 'country_abbreviation'
 
-TAKS_TYPE_SQL = "sql"
-TAKS_TYPE_DF = "df"
+TASK_TYPE_SQL = "sql"
+TASK_TYPE_DF = "df"
 
 _APP_NAME = "py_spark_tasks"
 
@@ -76,19 +76,19 @@ def fn_init_tables(*args):
 
 
 def fn_get_task_target_folder(in_task_type: str,
-                              in_task_group_id: int = None,
-                              in_tgt_folder: str = ""):
+                              in_task_group_id: int,
+                              in_tgt_folder: str = None):
     """
     Gives path to target folder (for task or group)
     """
+    l_task_group_folder = f"{_DATA_FOLDER}/{in_task_type}/task{in_task_group_id}"
 
-    l_task_group_type_folder = f"{_DATA_FOLDER}/{in_task_type}"
-    l_one_task_folder = f"{l_task_group_type_folder}/task{in_task_group_id}/{in_tgt_folder}"
+    if in_tgt_folder is None:
+        l_target_folder = f"{l_task_group_folder}"
+    else:
+        l_target_folder = f"{l_task_group_folder}/{in_tgt_folder}"
 
-    if in_task_group_id is None:
-        return l_task_group_type_folder
-
-    return l_one_task_folder
+    return l_target_folder
 
 
 def fn_run_task(in_tgt_folder: str,
@@ -101,11 +101,11 @@ def fn_run_task(in_tgt_folder: str,
     Function to write Data Frame Output to file using DF or Spark SQL
     """
 
-    l_type = TAKS_TYPE_DF
+    l_type = TASK_TYPE_DF
     l_df = in_data_frame
 
     if in_sql:
-        l_type = TAKS_TYPE_SQL
+        l_type = TASK_TYPE_SQL
         l_df = _SPARK_SESSION.sql(in_sql)
         l_df.explain(extended=False)
 
@@ -232,7 +232,7 @@ def fn_run_task_group_sql(in_task_group_id: int):
     l_range = fn_get_tasks_range(in_task_group_id)
 
     fn_clean_up_data_folder(in_task_group_id=in_task_group_id,
-                            in_task_type=TAKS_TYPE_SQL)
+                            in_task_type=TASK_TYPE_SQL)
 
     for l_one_task_group_id in l_range:
         l_task_sql_folder = f"{_APPS_FOLDER}/sql/task{l_one_task_group_id}"
