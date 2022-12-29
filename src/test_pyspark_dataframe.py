@@ -228,8 +228,8 @@ def fn_get_task4_def_list():
     """
 
     return [
-        # TaskDf("4.1_person_with_biggest_balance", fn_get_richest_person_broadcast()),
-        # TaskDf("4.2_invalid_accounts", fn_get_invalid_accounts()),
+        TaskDf("4.1_person_with_biggest_balance", fn_get_richest_person_broadcast()),
+        TaskDf("4.2_invalid_accounts", fn_get_invalid_accounts()),
         TaskDf("4.3_single_dataset", fn_get_all_info_broadcast()),
     ]
 
