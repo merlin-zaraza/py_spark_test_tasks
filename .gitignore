@@ -1,5 +1,6 @@
-*.csv
+data/*
 workspace.xml
 *.parquet
 *.crc
 _SUCCESS
+.pytest_cache

@@ -4,9 +4,9 @@ Package for running direct sql on files
 from pyspark.sql import functions as f
 
 import pyspark_sql as t
-from pyspark_sql import TaskDf, \
-    fn_get_tasks_range, fn_clean_up_data_folder, fn_run_tasks_by_definition_list, \
-    fn_create_df_from_csv_file
+
+from pyspark_sql import TaskDf, fn_get_tasks_range, fn_clean_up_data_folder, fn_run_tasks_by_definition_list, \
+    fn_create_df_from_csv_file, STR_TRUE, TASK_TYPE_DF, FOLDER_TEST, SPARK_SESSION, fn_get_task_target_folder
 
 l_df_accounts = fn_create_df_from_csv_file(in_file_name=t.ACCOUNTS)
 l_df_transactions = fn_create_df_from_csv_file(in_file_name=t.TRANSACTIONS)
@@ -19,8 +19,8 @@ def fn_get_task1_def_list():
     """
 
     l_df_account_types_count = l_df_transactions \
-        .groupBy(f.col("account_type")) \
-        .agg(f.count("account_type").alias("cnt"))
+        .groupBy("account_type") \
+        .agg(f.countDistinct("id").alias("cnt"))
 
     l_df_account_balance = l_df_transactions \
         .groupBy(f.col("id")) \
@@ -200,10 +200,9 @@ def fn_get_all_info_broadcast():
     """
 
     l_df_trans_info = l_df_transactions \
-        .select(
-        "id",
-        "amount",
-        "account_type") \
+        .select("id",
+                "amount",
+                "account_type") \
         .groupBy("id", "account_type") \
         .agg(f.sum("amount").alias("total_amount"))
     # f.concat_ws(",", f.collect_list("account_type")).alias("account_types")
@@ -260,6 +259,72 @@ def fn_run_dataframe_task(in_task_group_id: int):
 
         fn_run_tasks_by_definition_list(in_task_group_id=l_one_task_group,
                                         in_task_definition_list=l_one_task_definition_list)
+
+
+def fn_run_test_task(in_task_group_id: int,
+                     in_task_id: int,
+                     in_src_filter: str = STR_TRUE,
+                     in_task_type: str = TASK_TYPE_DF):
+    """
+    Function for test execution, compares input and output files
+    In case of difference raise error and shows rows with diff values
+
+    :param in_task_group_id:
+    :param in_task_id:
+    :param in_src_filter:
+    :param in_task_type:
+    :return:
+    """
+    l_task_id = in_task_id - 1
+
+    l_all_task_def = fn_get_task1_def_list()
+
+    l_folder_name = l_all_task_def[l_task_id].tgt_folder
+    l_folder_path = fn_get_task_target_folder(in_task_type=in_task_type,
+                                              in_task_group_id=in_task_group_id,
+                                              in_tgt_folder=l_folder_name)
+
+    fn_run_tasks_by_definition_list(in_task_group_id=in_task_group_id,
+                                    in_task_definition_list=[l_all_task_def[l_task_id]])
+
+    # ACT
+    fn_create_df_from_csv_file(in_file_name="*",
+                               in_file_path=l_folder_path,
+                               in_view_name="a")
+    # expect
+    l_df_expect = fn_create_df_from_csv_file(in_file_name=l_folder_name,
+                                             in_file_path=f"{FOLDER_TEST}/task{in_task_group_id}/expected_output",
+                                             in_view_name="b")
+
+    l_cols = ",".join(l_df_expect.columns)
+
+    l_sql = f"""
+        SELECT 
+            {l_cols},
+             sum(actual) as total_actual, 
+             sum(expected) as total_expected 
+        FROM
+        (
+            Select {l_cols}, 1 as actual, 0 as expected from a where {in_src_filter}  
+            UNION ALL
+            Select {l_cols}, 0 as actual, 1 as expected from b
+        )
+        GROUP BY 
+            {l_cols}
+        HAVING
+            sum(actual) != sum(expected)                        
+    """
+
+    print(f"Running sql : {l_sql}")
+
+    l_df_diff = SPARK_SESSION.sql(l_sql)
+    l_diff_cnt = l_df_diff.count()
+
+    if l_diff_cnt == 0:
+        print(f'Test succeeded for {l_folder_name}')
+    else:
+        l_df_diff.show()
+        raise AssertionError(f"Test has failed for '{l_folder_name}'. Difference found")
 
 
 if __name__ == "__main__":

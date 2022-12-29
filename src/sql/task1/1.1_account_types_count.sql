@@ -1,4 +1,4 @@
 Select account_type,
-       count(*) as cnt
+       count(distinct id) as cnt
 From transactions
 Group by account_type

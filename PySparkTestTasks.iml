@@ -19,6 +19,10 @@
     <option name="TEMPLATE_FOLDERS">
       <list>
         <option value="$MODULE_DIR$/src/sql" />
+        <option value="$MODULE_DIR$/src/sql/task1" />
+        <option value="$MODULE_DIR$/src/sql/task2" />
+        <option value="$MODULE_DIR$/src/sql/task3" />
+        <option value="$MODULE_DIR$/src/sql/task4" />
       </list>
     </option>
   </component>

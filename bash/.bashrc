@@ -18,9 +18,3 @@ alias cp='cp -i'
 alias mv='mv -i'
 
 cd /opt/spark-apps
-
-export SPARK_APPS=/opt/spark-apps
-export SPARK_DATA=/opt/spark-data
-export SPARK_APPS_SRC=/opt/spark-apps/src
-
-export PYTHON_PATH=$PYTHON_PATH:"$SPARK_APPS_SRC"

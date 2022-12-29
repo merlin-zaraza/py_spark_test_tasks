@@ -19,12 +19,13 @@ TASK_TYPE_DF = "df"
 
 _APP_NAME = "py_spark_tasks"
 
-_TRUE_STR: str = "true"
-_DATA_FOLDER: str = os.environ.get("SPARK_DATA", "/opt/spark-data")
-_APPS_FOLDER: str = os.environ.get("SPARK_APPS", "/opt/spark-apps")
+STR_TRUE: str = "true"
+FOLDER_DATA: str = os.environ.get("SPARK_DATA", "/opt/spark-data")
+FOLDER_APPS: str = os.environ.get("SPARK_APPS", "/opt/spark-apps")
+FOLDER_TEST: str = os.environ.get("SPARK_TEST", "/opt/spark-test")
+SPARK_SESSION: SparkSession = SparkSession.builder.appName(_APP_NAME).getOrCreate()
 
 _DF_PARTITIONS_COUNT: int = 20
-_SPARK_SESSION: SparkSession = SparkSession.builder.appName(_APP_NAME).getOrCreate()
 _SEPARATOR: str = ";"
 TaskDf = namedtuple("TaskDf", "tgt_folder data_frame")
 
@@ -46,18 +47,19 @@ def fn_init_argparse() -> argparse.ArgumentParser:
 def fn_create_df_from_csv_file(in_file_name: str,
                                in_separator: str = _SEPARATOR,
                                in_view_name: str = None,
-                               in_repartition: int = _DF_PARTITIONS_COUNT):
+                               in_repartition: int = _DF_PARTITIONS_COUNT,
+                               in_file_path: str = FOLDER_DATA):
     """
     Function for registering file in SQL engine as temp view
     """
 
     l_view_name = in_view_name if in_view_name else in_file_name
 
-    l_df = _SPARK_SESSION.read \
-        .option("header", _TRUE_STR) \
-        .option("inferSchema", _TRUE_STR) \
+    l_df = SPARK_SESSION.read \
+        .option("header", STR_TRUE) \
+        .option("inferSchema", STR_TRUE) \
         .option("sep", in_separator) \
-        .csv(f"file://{_DATA_FOLDER}/{in_file_name}.csv") \
+        .csv(f"file://{in_file_path}/{in_file_name}.csv") \
         .repartition(in_repartition) \
         .cache()
 
@@ -81,7 +83,7 @@ def fn_get_task_target_folder(in_task_type: str,
     """
     Gives path to target folder (for task or group)
     """
-    l_task_group_folder = f"{_DATA_FOLDER}/{in_task_type}/task{in_task_group_id}"
+    l_task_group_folder = f"{FOLDER_DATA}/{in_task_type}/task{in_task_group_id}"
 
     if in_tgt_folder is None:
         l_target_folder = f"{l_task_group_folder}"
@@ -106,7 +108,7 @@ def fn_run_task(in_tgt_folder: str,
 
     if in_sql:
         l_type = TASK_TYPE_SQL
-        l_df = _SPARK_SESSION.sql(in_sql)
+        l_df = SPARK_SESSION.sql(in_sql)
         l_df.explain(extended=False)
 
     l_path = fn_get_task_target_folder(in_task_group_id=in_task_group_id,
@@ -116,14 +118,14 @@ def fn_run_task(in_tgt_folder: str,
     if (in_repartition_tgt is not None) and in_repartition_tgt > 0:
         l_df.repartition(in_repartition_tgt) \
             .write.mode(in_mode) \
-            .option("header", _TRUE_STR) \
-            .option("inferSchema", _TRUE_STR) \
+            .option("header", STR_TRUE) \
+            .option("inferSchema", STR_TRUE) \
             .option("sep", _SEPARATOR) \
             .csv(l_path)
     else:
         l_df.write.mode(in_mode) \
-            .option("header", _TRUE_STR) \
-            .option("inferSchema", _TRUE_STR) \
+            .option("header", STR_TRUE) \
+            .option("inferSchema", STR_TRUE) \
             .option("sep", _SEPARATOR) \
             .csv(l_path)
 
@@ -194,8 +196,8 @@ def fn_init(in_init_all_tables: bool = False):
     Function to init spark tables and spark session
     """
 
-    global _SPARK_SESSION
-    _SPARK_SESSION = SparkSession.builder.appName(_APP_NAME).getOrCreate()
+    global SPARK_SESSION
+    SPARK_SESSION = SparkSession.builder.appName(_APP_NAME).getOrCreate()
 
     if in_init_all_tables:
         fn_init_tables(ACCOUNTS,
@@ -207,7 +209,7 @@ def fn_close_session():
     """
     Function to close spark session
     """
-    _SPARK_SESSION.stop()
+    SPARK_SESSION.stop()
 
 
 def fn_clean_up_data_folder(in_task_group_id: int,
@@ -235,7 +237,7 @@ def fn_run_task_group_sql(in_task_group_id: int):
                             in_task_type=TASK_TYPE_SQL)
 
     for l_one_task_group_id in l_range:
-        l_task_sql_folder = f"{_APPS_FOLDER}/sql/task{l_one_task_group_id}"
+        l_task_sql_folder = f"{FOLDER_APPS}/sql/task{l_one_task_group_id}"
 
         # constructing the path object
         l_dir = pathlib.Path(l_task_sql_folder)

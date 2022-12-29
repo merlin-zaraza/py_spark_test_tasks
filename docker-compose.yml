@@ -18,6 +18,7 @@ x-spark-common:
   volumes:
     - ./src:/opt/spark-apps
     - ./data:/opt/spark-data
+    - ./test:/opt/spark-test
 
 services:
 

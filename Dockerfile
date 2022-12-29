@@ -15,6 +15,7 @@ RUN apt-get update && apt-get install -y curl vim wget software-properties-commo
                                          python3-pandas python3-simpy
 
 RUN update-alternatives --install "/usr/bin/python" "python" "$(which python3)" 1
+RUN python3 -m pip install pytest-spark py4j
 
 # Fix the value of PYTHONHASHSEED
 # Note: this is needed when you use Python 3.3 or greater
@@ -39,16 +40,19 @@ WORKDIR /opt/spark
 ENV SPARK_MASTER_PORT=7077 \
 SPARK_MASTER_WEBUI_PORT=8080 \
 SPARK_LOG_DIR=/opt/spark/logs \
+SPARK_APPS=/opt/spark-apps \
+SPARK_DATA=/opt/spark-data \
+SPARK_TEST=/opt/spark-test \
 SPARK_MASTER_LOG=/opt/spark/logs/spark-master.out \
 SPARK_WORKER_LOG=/opt/spark/logs/spark-worker.out \
 SPARK_WORKER_WEBUI_PORT=8080 \
 SPARK_WORKER_PORT=7000 \
 SPARK_MASTER="spark://spark-master:7077" \
 SPARK_WORKLOAD="master" \
-PYTHON_PATH=$SPARK_HOME/python:$PYTHON_PATH \
 PYSPARK_PYTHON=python3 \
 PATH="$PATH:$SPARK_HOME/bin"
 
+ENV PYTHONPATH=$SPARK_HOME/python:$SPARK_APPS:$PYTHONPATH
 
 EXPOSE 8080 7077 6066
 
@@ -61,6 +65,8 @@ touch $SPARK_MASTER_LOG && \
 touch $SPARK_WORKER_LOG && \
 ln -sf /dev/stdout $SPARK_MASTER_LOG && \
 ln -sf /dev/stdout $SPARK_WORKER_LOG
+
+RUN mkdir -p $SPARK_TEST
 
 COPY bash/start-spark.sh /
 COPY bash/.bashrc /root/.bashrc
