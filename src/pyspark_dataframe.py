@@ -3,8 +3,8 @@ Package for running direct sql on files
 """
 from pyspark.sql import functions as f
 
-import test_pyspark_sql as t
-from test_pyspark_sql import TaskDf, \
+import pyspark_sql as t
+from pyspark_sql import TaskDf, \
     fn_get_tasks_range, fn_clean_up_data_folder, fn_run_tasks_by_definition_list, \
     fn_create_df_from_csv_file
 
