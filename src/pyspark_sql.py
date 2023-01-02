@@ -5,8 +5,7 @@ import pathlib
 import argparse
 import os
 import shutil
-from collections import namedtuple
-from typing import List
+from typing import List, NamedTuple
 
 from pyspark.sql import SparkSession, DataFrame
 
@@ -27,7 +26,15 @@ SPARK_SESSION: SparkSession = SparkSession.builder.appName(_APP_NAME).getOrCreat
 
 _DF_PARTITIONS_COUNT: int = 20
 _SEPARATOR: str = ";"
-TaskDf = namedtuple("TaskDf", "tgt_folder data_frame")
+
+
+class TaskDf(NamedTuple):
+    """
+    Class for task dataframe definition
+    """
+    tgt_folder: str
+    data_frame: DataFrame
+    test_filter_value: str = STR_TRUE
 
 
 def fn_init_argparse() -> argparse.ArgumentParser:

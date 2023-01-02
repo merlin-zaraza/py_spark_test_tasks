@@ -9,7 +9,7 @@ from pyspark.sql import DataFrame
 import pyspark_sql as t
 
 from pyspark_sql import TaskDf, fn_get_task_group_range, fn_clean_up_data_folder, fn_run_tasks_by_definition_list, \
-    fn_create_df_from_csv_file, STR_TRUE, TASK_TYPE_DF, FOLDER_TEST, SPARK_SESSION, fn_get_task_target_folder
+    fn_create_df_from_csv_file, TASK_TYPE_DF, FOLDER_TEST, SPARK_SESSION, fn_get_task_target_folder
 
 
 def fn_get_task1_def_list():
@@ -23,11 +23,12 @@ def fn_get_task1_def_list():
 
     l_df_account_balance = DF_TRANSACTIONS \
         .groupBy(f.col("id")) \
-        .agg(f.sum("amount").alias("balance"), f.max("transaction_date").alias("latest_date"))
+        .agg(f.round(f.sum("amount"), 2).alias("balance"),
+             f.max("transaction_date").alias("latest_date"))
 
     return [
         TaskDf("1.1_account_types_count", l_df_account_types_count),
-        TaskDf("1.2_account_balance", l_df_account_balance),
+        TaskDf("1.2_account_balance", l_df_account_balance, "id <= 20 "),
     ]
 
 
@@ -243,6 +244,11 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDf]]:
     return l_result
 
 
+def fn_get_one_task_definition(in_task_group_id: int, in_task_id: int):
+    l_one_task_index = in_task_id - 1
+    return DICT_ALL_GROUP_TASKS[in_task_group_id][l_one_task_index]
+
+
 def fn_run_dataframe_task(in_task_group_id: int = None, in_task_id: int = None):
     """
     Function to execute all DF from task group list
@@ -270,8 +276,8 @@ def fn_run_dataframe_task(in_task_group_id: int = None, in_task_id: int = None):
         if in_task_id is None:
             l_one_task_definition_list = DICT_ALL_GROUP_TASKS[l_one_task_group]
         else:
-            l_one_task_index = in_task_id - 1
-            l_one_task_definition = DICT_ALL_GROUP_TASKS[l_one_task_group][l_one_task_index]
+            l_one_task_definition = fn_get_one_task_definition(in_task_group_id=in_task_group_id,
+                                                               in_task_id=in_task_id)
             l_one_task_definition_list.append(l_one_task_definition)
 
         fn_run_tasks_by_definition_list(in_task_group_id=l_one_task_group,
@@ -280,7 +286,6 @@ def fn_run_dataframe_task(in_task_group_id: int = None, in_task_id: int = None):
 
 def fn_run_test_task(in_task_group_id: int,
                      in_task_id: int,
-                     in_src_filter: str = STR_TRUE,
                      in_task_type: str = TASK_TYPE_DF):
     """
     Function for test execution, compares input and output files
@@ -288,29 +293,36 @@ def fn_run_test_task(in_task_group_id: int,
 
     :param in_task_group_id:
     :param in_task_id:
-    :param in_src_filter:
     :param in_task_type:
     :return:
     """
+    if in_task_type == TASK_TYPE_DF:
+        fn_run_dataframe_task(in_task_group_id=in_task_group_id, in_task_id=in_task_id)
 
-    l_all_task_def = fn_get_task1_def_list()
+    l_task_def = fn_get_one_task_definition(in_task_group_id=in_task_group_id, in_task_id=in_task_id)
 
-    l_folder_name = l_all_task_def[in_task_id].tgt_folder
+    l_folder_name = l_task_def.tgt_folder
+    l_src_filter = l_task_def.test_filter_value
+
     l_folder_path = fn_get_task_target_folder(in_task_type=in_task_type,
                                               in_task_group_id=in_task_group_id,
                                               in_tgt_folder=l_folder_name)
 
-    fn_run_tasks_by_definition_list(in_task_group_id=in_task_group_id,
-                                    in_task_definition_list=[l_all_task_def[in_task_id]])
+    l_task_group_folder_name = f'task{in_task_group_id}'
+
+    l_view_name = f"{l_task_group_folder_name}_{in_task_id}_"
+
+    l_actual_view_name = l_view_name + "actual"
+    l_expected_view_name = l_view_name + "expected"
 
     # ACT
     fn_create_df_from_csv_file(in_file_name="*",
                                in_file_path=l_folder_path,
-                               in_view_name="a")
+                               in_view_name=l_actual_view_name)
     # expect
     l_df_expect = fn_create_df_from_csv_file(in_file_name=l_folder_name,
-                                             in_file_path=f"{FOLDER_TEST}/task{in_task_group_id}/expected_output",
-                                             in_view_name="b")
+                                             in_file_path=f"{FOLDER_TEST}/{l_task_group_folder_name}/expected_output",
+                                             in_view_name=l_expected_view_name)
 
     l_cols = ",".join(l_df_expect.columns)
 
@@ -321,9 +333,9 @@ def fn_run_test_task(in_task_group_id: int,
              sum(expected) as total_expected 
         FROM
         (
-            Select {l_cols}, 1 as actual, 0 as expected from a where {in_src_filter}  
+            Select {l_cols}, 1 as actual, 0 as expected from {l_actual_view_name} where {l_src_filter}   
             UNION ALL
-            Select {l_cols}, 0 as actual, 1 as expected from b
+            Select {l_cols}, 0 as actual, 1 as expected from {l_expected_view_name}
         )
         GROUP BY 
             {l_cols}
@@ -339,7 +351,7 @@ def fn_run_test_task(in_task_group_id: int,
     if l_diff_cnt == 0:
         print(f'Test succeeded for {l_folder_name}')
     else:
-        l_df_diff.show()
+        l_df_diff.orderBy(l_df_expect.columns).show()
         raise AssertionError(f"Test has failed for '{l_folder_name}'. Difference found")
 
 
