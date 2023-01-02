@@ -41,6 +41,11 @@ def fn_init_argparse() -> argparse.ArgumentParser:
     parser.add_argument(
         "-g", "--group_id", default=None, type=int
     )
+
+    parser.add_argument(
+        "-t", "--task_id", default=None, type=int
+    )
+
     return parser
 
 
@@ -172,7 +177,7 @@ def fn_run_task_df(in_tgt_folder: str,
                 in_repartition_tgt=in_repartition_tgt)
 
 
-def fn_get_tasks_range(in_task_group_id: int):
+def fn_get_task_group_range(in_task_group_id: int = None):
     """
     Function to get list of tasks to run
     By default (in_task_group_id is none) it is all tasks : 1,2,3,4
@@ -231,7 +236,7 @@ def fn_run_task_group_sql(in_task_group_id: int):
 
     fn_init(in_init_all_tables=True)
 
-    l_range = fn_get_tasks_range(in_task_group_id)
+    l_range = fn_get_task_group_range(in_task_group_id)
 
     fn_clean_up_data_folder(in_task_group_id=in_task_group_id,
                             in_task_type=TASK_TYPE_SQL)
