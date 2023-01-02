@@ -3,5 +3,8 @@ import pyspark_dataframe as psd
 
 
 @pytest.mark.spark
-def test_task1_1():
-    psd.fn_run_test_task(1, 1)
+@pytest.mark.parametrize("in_task_group_id,in_task_id",
+                         [(1, 1), pytest.param(1, 3, marks=pytest.mark.xfail)])
+def test_task_group(in_task_group_id, in_task_id):
+    psd.fn_run_dataframe_task(in_task_group_id=in_task_group_id,
+                              in_task_id=in_task_id)
