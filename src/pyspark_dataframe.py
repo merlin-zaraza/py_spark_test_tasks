@@ -95,8 +95,8 @@ def fn_get_task2_def_list():
         TaskDf("2.2_accounts_non_pro", l_l_df_accounts_non_pro_with_user_info, "id <= 20"),
         TaskDf("2.3_accounts_top_5", l_df_accounts_top5),
         TaskDf("2.4_total_per_year", l_df_total_expenses_with_user_info,
-               "id in (351901,64444,42093,456473,37263,457272,170685,153318,288955,452806,"
-               "       435985,248093,111744,392651,180469,204816,263364,230316,56785,10972)"),
+               "id in (351901,64444,42093,456473,372636,457272,170685,153318,288955,452806,"
+               "435985,248093,111744,392651,180469,204816,263364,230316,56785,109722)"),
         TaskDf("2.5_total_expenses_pivot", l_df_total_expenses_pivot, "id <= 20"),
     ]
 
