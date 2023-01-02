@@ -1,7 +1,7 @@
 with t as (
     Select id,
-           sum(case when amount < 0 then amount else 0 end) as total_expenses,
-           sum(case when amount > 0 then amount else 0 end) as total_earnings
+           sum(case when amount < 0 then abs( amount) else 0 end) as total_expenses,
+           sum(case when amount > 0 then amount       else 0 end) as total_earnings
     From transactions
     Group by id
 ), a as (

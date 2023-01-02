@@ -75,8 +75,8 @@ def fn_get_task2_def_list():
         " case when amount < 0 then amount else 0 end as expenses",
         " case when amount > 0 then amount else 0 end as earnings "
     ).groupBy("id") \
-        .agg(f.sum("expenses").alias("expenses"),
-             f.sum("earnings").alias("earnings"))
+        .agg(f.round(f.abs(f.sum("expenses")), 2).alias("expenses"),
+             f.round(f.sum("earnings"), 2).alias("earnings"))
 
     l_df_total_expenses_with_user_info = fn_inner_join_acc_names_to_df(l_df_total_expenses)
 
@@ -90,11 +90,14 @@ def fn_get_task2_def_list():
         .fillna(value=0)
 
     return [
-        TaskDf("2.1_accounts_btw_18_30", l_df_accounts_btw_18_30),
-        TaskDf("2.2_accounts_non_pro", l_l_df_accounts_non_pro_with_user_info),
+        TaskDf("2.1_accounts_btw_18_30", l_df_accounts_btw_18_30,
+               "id in (1,5,6,8,19,30,33,34,35,36,38,42,44,52,55,57,64,72,74,76)"),
+        TaskDf("2.2_accounts_non_pro", l_l_df_accounts_non_pro_with_user_info, "id <= 20"),
         TaskDf("2.3_accounts_top_5", l_df_accounts_top5),
-        TaskDf("2.4_total_per_year", l_df_total_expenses_with_user_info),
-        TaskDf("2.5_total_expenses_pivot", l_df_total_expenses_pivot),
+        TaskDf("2.4_total_per_year", l_df_total_expenses_with_user_info,
+               "id in (351901,64444,42093,456473,37263,457272,170685,153318,288955,452806,"
+               "       435985,248093,111744,392651,180469,204816,263364,230316,56785,10972)"),
+        TaskDf("2.5_total_expenses_pivot", l_df_total_expenses_pivot, "id <= 20"),
     ]
 
 
@@ -271,6 +274,7 @@ def fn_run_dataframe_task(in_task_group_id: int = None, in_task_id: int = None):
             raise ValueError(f"in_task_id is not in {l_list_default_task_ids} for in_task_group_id={in_task_group_id}")
 
     for l_one_task_group in l_range:
+
         l_one_task_definition_list = []
 
         if in_task_id is None:
@@ -279,6 +283,8 @@ def fn_run_dataframe_task(in_task_group_id: int = None, in_task_id: int = None):
             l_one_task_definition = fn_get_one_task_definition(in_task_group_id=in_task_group_id,
                                                                in_task_id=in_task_id)
             l_one_task_definition_list.append(l_one_task_definition)
+
+        print(l_one_task_group, l_one_task_definition_list)
 
         fn_run_tasks_by_definition_list(in_task_group_id=l_one_task_group,
                                         in_task_definition_list=l_one_task_definition_list)
@@ -324,7 +330,7 @@ def fn_run_test_task(in_task_group_id: int,
                                              in_file_path=f"{FOLDER_TEST}/{l_task_group_folder_name}/expected_output",
                                              in_view_name=l_expected_view_name)
 
-    l_cols = ",".join(l_df_expect.columns)
+    l_cols = ",".join([f"'{x}'" for x in l_df_expect.columns])
 
     l_sql = f"""
         SELECT 
