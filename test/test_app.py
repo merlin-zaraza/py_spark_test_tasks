@@ -16,8 +16,10 @@ def test_task_group_invalid_parameters(in_task_group_id, in_task_id):
 @pytest.mark.spark
 @pytest.mark.parametrize("in_task_group_id,in_task_id",
                          [
-                             # (1, 1), (1, 2),
-                             (2, 1), (2, 2), (2, 3), (2, 4), (2, 5),
+                              (1, 1), (1, 2),
+                              (2, 1), (2, 2), (2, 3), (2, 4), (2, 5),
+                              (3, 1), (3, 2), (3, 3), (3, 4),
+                             # (3, 5),
                          ]
                          )
 def test_task_data(in_task_group_id, in_task_id):

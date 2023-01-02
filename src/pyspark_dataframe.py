@@ -106,9 +106,9 @@ def fn_get_task3_def_list():
     Task 3 Data Frames List
     """
 
-    l_df_first_last_concatenated = DF_ACCOUNTS.selectExpr(
-        "Concat(first_name,' ',last_name) as first_last_concat"
-    ).where("age between 18 and 30")
+    l_df_first_last_concatenated = DF_ACCOUNTS \
+        .selectExpr("concat(first_name,  ' ', last_name) as first_last_concat") \
+        .where("age between 18 and 30").distinct()
 
     l_df_avg_transaction_amount_2021_per_client = DF_TRANSACTIONS.selectExpr(
         "id",
@@ -120,7 +120,7 @@ def fn_get_task3_def_list():
 
     l_df_account_types_count = DF_TRANSACTIONS \
         .groupBy(f.col("account_type")) \
-        .agg(f.count("account_type").alias("cnt"))
+        .agg(f.countDistinct("id").alias("cnt"))
 
     l_df_top_10_positive = DF_TRANSACTIONS.where("amount > 0") \
         .groupBy("id") \
@@ -134,8 +134,14 @@ def fn_get_task3_def_list():
         .orderBy(f.col("first_name").desc())
 
     return [
-        TaskDf("3.1_first_last_concatenated", l_df_first_last_concatenated),
-        TaskDf("3.2_avg_transaction_amount_2021_per_client", l_df_avg_transaction_amount_2021_per_client),
+        TaskDf("3.1_first_last_concatenated", l_df_first_last_concatenated, """
+           first_last_concat in ('Darcy Phillips','Amelia Wright','Haris Ellis',
+           'Tony Hall','Rubie Stewart','Miley Perry','Marcus Carter','Charlie Harris','Honey Rogers','Luke Harris',
+           'Spike Murphy','Vincent Adams','James Barnes','George Bailey','Sienna Holmes','Isabella Elliott',
+           'Freddie Martin','Kate Wright','Albert Myers','Connie Wells')
+         """),
+        TaskDf("3.2_avg_transaction_amount_2021_per_client", l_df_avg_transaction_amount_2021_per_client,
+               "id in ( 1,2,4,6,7,11,12,13,15,17,19,22,23,24,27,28,30,31,32,33 )"),
         TaskDf("3.3_account_types_count", l_df_account_types_count),
         TaskDf("3.4_top_10_positive", l_df_top_10_positive),
         TaskDf("3.5_clients_sorted_by_first_name_descending", l_df_clients_sorted_by_first_name_descending),
@@ -330,7 +336,7 @@ def fn_run_test_task(in_task_group_id: int,
                                              in_file_path=f"{FOLDER_TEST}/{l_task_group_folder_name}/expected_output",
                                              in_view_name=l_expected_view_name)
 
-    l_cols = ",".join([f"'{x}'" for x in l_df_expect.columns])
+    l_cols = ",".join(l_df_expect.columns)
 
     l_sql = f"""
         SELECT 
