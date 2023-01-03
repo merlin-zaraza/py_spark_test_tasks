@@ -7,28 +7,28 @@ with tr as (
     Group BY id, tr_year
 )
 Select id,
-       ifnull( y_2011 , 0) as y_2011 ,
-       ifnull( y_2012 , 0) as y_2012 ,
-       ifnull( y_2013 , 0) as y_2013 ,
-       ifnull( y_2014 , 0) as y_2014 ,
-       ifnull( y_2015 , 0) as y_2015 ,
-       ifnull( y_2016 , 0) as y_2016 ,
-       ifnull( y_2017 , 0) as y_2017 ,
-       ifnull( y_2018 , 0) as y_2018 ,
-       ifnull( y_2019 , 0) as y_2019 ,
-       ifnull( y_2020 , 0) as y_2020 ,
-       ifnull( y_2021 , 0) as y_2021
+       ifnull(`2011`, 0) as `2011`,
+       ifnull(`2012`, 0) as `2012`,
+       ifnull(`2013`, 0) as `2013`,
+       ifnull(`2014`, 0) as `2014`,
+       ifnull(`2015`, 0) as `2015`,
+       ifnull(`2016`, 0) as `2016`,
+       ifnull(`2017`, 0) as `2017`,
+       ifnull(`2018`, 0) as `2018`,
+       ifnull(`2019`, 0) as `2019`,
+       ifnull(`2020`, 0) as `2020`,
+       ifnull(`2021`, 0) as `2021`
 from tr Pivot (
     ifnull(  Round( Sum(amount), 2), 0 ) as total_amount
-    for tr_year in ( 2011 as y_2011,
-                     2012 as y_2012,
-                     2013 as y_2013,
-                     2014 as y_2014,
-                     2015 as y_2015,
-                     2016 as y_2016,
-                     2017 as y_2017,
-                     2018 as y_2018,
-                     2019 as y_2019,
-                     2020 as y_2020,
-                     2021 as y_2021 )
+    for tr_year in ( 2011,
+                     2012,
+                     2013,
+                     2014,
+                     2015,
+                     2016,
+                     2017,
+                     2018,
+                     2019,
+                     2020,
+                     2021 )
 )

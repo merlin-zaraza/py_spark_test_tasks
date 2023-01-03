@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# For first time run use L_IN_BUILD_IMAGE = "y" it will build spark cluster image
+#    example ./bash/start-docker.sh y
+# To start project with tests run set L_IN_RUN_TEST="y"
+#    example ./bash/start-docker.sh n y
+# To rerun failed tests set L_IN_RUN_TEST="f"
+#    example ./bash/start-docker.sh n f
+
 set -eEu
 set -o pipefail
 
@@ -72,8 +79,15 @@ fi
 
 l_test_cmd=""
 
-if  [[ "$L_IN_RUN_TEST" == "y" ]]; then
-  l_test_cmd="-c 'pytest /opt/spark-test'"
+if  [[ "$L_IN_RUN_TEST" != "n" ]]; then
+
+  # rerun failed
+  l_rerun_flag=""
+  if [[ "$L_IN_RUN_TEST" == "f" ]]; then
+    l_rerun_flag=" --lf"
+  fi
+
+  l_test_cmd="-c 'pytest /opt/spark-test $l_rerun_flag'"
 fi
 
 fn_run_command "docker container exec -it ${l_proj_folder}-spark-master-1 /bin/bash $l_test_cmd"  \

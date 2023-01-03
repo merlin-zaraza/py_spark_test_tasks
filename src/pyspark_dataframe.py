@@ -3,13 +3,13 @@ Package for running direct sql on files
 """
 import sys
 from typing import Dict, List
-from pyspark.sql import functions as f
-from pyspark.sql import DataFrame
+from pyspark.sql import functions as f, DataFrame
 
 import pyspark_sql as t
 
 from pyspark_sql import TaskDf, fn_get_task_group_range, fn_clean_up_data_folder, fn_run_tasks_by_definition_list, \
-    fn_create_df_from_csv_file, TASK_TYPE_DF, FOLDER_TEST, SPARK_SESSION, fn_get_task_target_folder
+    fn_create_df_from_csv_file, TASK_TYPE_DF, FOLDER_TEST, SPARK_SESSION, ROUND_DIGITS, \
+    fn_get_task_target_folder
 
 
 def fn_get_task1_def_list():
@@ -23,12 +23,14 @@ def fn_get_task1_def_list():
 
     l_df_account_balance = DF_TRANSACTIONS \
         .groupBy(f.col("id")) \
-        .agg(f.round(f.sum("amount"), 2).alias("balance"),
+        .agg(f.round(f.sum("amount"), ROUND_DIGITS).alias("balance"),
              f.max("transaction_date").alias("latest_date"))
 
+    l_task_group_id = 1
+
     return [
-        TaskDf("1.1_account_types_count", l_df_account_types_count),
-        TaskDf("1.2_account_balance", l_df_account_balance, "id <= 20 "),
+        TaskDf(l_task_group_id, "1.1_account_types_count", l_df_account_types_count),
+        TaskDf(l_task_group_id, "1.2_account_balance", l_df_account_balance, "id <= 20 "),
     ]
 
 
@@ -76,29 +78,31 @@ def fn_get_task2_def_list():
         " case when amount < 0 then amount else 0 end as expenses",
         " case when amount > 0 then amount else 0 end as earnings "
     ).groupBy("id") \
-        .agg(f.round(f.abs(f.sum("expenses")), 2).alias("expenses"),
-             f.round(f.sum("earnings"), 2).alias("earnings"))
+        .agg(f.round(f.abs(f.sum("expenses")), ROUND_DIGITS).alias("expenses"),
+             f.round(f.sum("earnings"), ROUND_DIGITS).alias("earnings"))
 
     l_df_total_expenses_with_user_info = fn_inner_join_acc_names_to_df(l_df_total_expenses)
 
     l_df_total_expenses_pivot = DF_TRANSACTIONS.selectExpr(
         "id",
-        "amount",
+        "case when amount > 0 then amount else 0 end as earnings",
         "int(substring(transaction_date, 1, 4)) as tr_year",
     ).groupBy("id") \
         .pivot("tr_year") \
-        .agg(f.sum("amount").alias("amount")) \
+        .agg(f.round(f.sum("earnings").alias("earnings"), ROUND_DIGITS)) \
         .fillna(value=0)
 
+    l_task_group_id = 2
+
     return [
-        TaskDf("2.1_accounts_btw_18_30", l_df_accounts_btw_18_30,
+        TaskDf(l_task_group_id, "2.1_accounts_btw_18_30", l_df_accounts_btw_18_30,
                "id in (1,5,6,8,19,30,33,34,35,36,38,42,44,52,55,57,64,72,74,76)"),
-        TaskDf("2.2_accounts_non_pro", l_l_df_accounts_non_pro_with_user_info, "id <= 20"),
-        TaskDf("2.3_accounts_top_5", l_df_accounts_top5),
-        TaskDf("2.4_total_per_year", l_df_total_expenses_with_user_info,
+        TaskDf(l_task_group_id, "2.2_accounts_non_pro", l_l_df_accounts_non_pro_with_user_info, "id <= 20"),
+        TaskDf(l_task_group_id, "2.3_accounts_top_5", l_df_accounts_top5),
+        TaskDf(l_task_group_id, "2.4_total_per_year", l_df_total_expenses_with_user_info,
                "id in (351901,64444,42093,456473,372636,457272,170685,153318,288955,452806,"
                "435985,248093,111744,392651,180469,204816,263364,230316,56785,109722)"),
-        TaskDf("2.5_total_expenses_pivot", l_df_total_expenses_pivot, "id <= 20"),
+        TaskDf(l_task_group_id, "2.5_total_earnings_pivot", l_df_total_expenses_pivot, "id <= 20"),
     ]
 
 
@@ -116,8 +120,7 @@ def fn_get_task3_def_list():
         "amount"
     ).where("transaction_date like '2021%'") \
         .groupBy("id") \
-        .agg(f.round(f.avg("amount"),
-                     2).alias("avg_amount"))
+        .agg(f.round(f.avg("amount"), ROUND_DIGITS).alias("avg_amount"))
 
     l_df_account_types_count = DF_TRANSACTIONS \
         .groupBy(f.col("account_type")) \
@@ -125,8 +128,7 @@ def fn_get_task3_def_list():
 
     l_df_top_10_positive = DF_TRANSACTIONS.where("amount > 0") \
         .groupBy("id") \
-        .agg(f.round(f.sum("amount"),
-                     2).alias("total_amount")) \
+        .agg(f.round(f.sum("amount"), ROUND_DIGITS).alias("total_amount")) \
         .orderBy(f.col("total_amount").desc()) \
         .limit(10)
 
@@ -134,18 +136,22 @@ def fn_get_task3_def_list():
         .select("first_name", "last_name").distinct() \
         .orderBy(f.col("first_name").desc())
 
+    l_task_group_id = 3
+
     return [
-        TaskDf("3.1_first_last_concatenated", l_df_first_last_concatenated, """
+        TaskDf(l_task_group_id, "3.1_first_last_concatenated", l_df_first_last_concatenated, """
            first_last_concat in ('Darcy Phillips','Amelia Wright','Haris Ellis',
            'Tony Hall','Rubie Stewart','Miley Perry','Marcus Carter','Charlie Harris','Honey Rogers','Luke Harris',
            'Spike Murphy','Vincent Adams','James Barnes','George Bailey','Sienna Holmes','Isabella Elliott',
            'Freddie Martin','Kate Wright','Albert Myers','Connie Wells')
          """),
-        TaskDf("3.2_avg_transaction_amount_2021_per_client", l_df_avg_transaction_amount_2021_per_client,
+        TaskDf(l_task_group_id, "3.2_avg_transaction_amount_2021_per_client",
+               l_df_avg_transaction_amount_2021_per_client,
                "id in ( 1,2,4,6,7,11,12,13,15,17,19,22,23,24,27,28,30,31,32,33 )"),
-        TaskDf("3.3_account_types_count", l_df_account_types_count),
-        TaskDf("3.4_top_10_positive", l_df_top_10_positive),
-        TaskDf("3.5_clients_sorted_by_first_name_descending", l_df_clients_sorted_by_first_name_descending,
+        TaskDf(l_task_group_id, "3.3_account_types_count", l_df_account_types_count),
+        TaskDf(l_task_group_id, "3.4_top_10_positive", l_df_top_10_positive),
+        TaskDf(l_task_group_id, "3.5_clients_sorted_by_first_name_descending",
+               l_df_clients_sorted_by_first_name_descending,
                "first_name in ('Wilson') and "
                "last_name  in ('Mitchell','Anderson','Cameron','Gray','Barnes',"
                "'Williams','Stewart','Elliott','Cole',"
@@ -165,7 +171,7 @@ def fn_get_richest_person_in_country_broadcast():
         "amount"
     ).groupBy("id") \
         .agg(
-        f.round(f.sum("amount"), 2).alias("total_amount")
+        f.round(f.sum("amount"), ROUND_DIGITS).alias("total_amount")
     )
 
     l_df_richest_person_account_info = l_richest_person_transactions.join(
@@ -219,8 +225,7 @@ def fn_get_all_info_broadcast():
                 "amount",
                 "account_type") \
         .groupBy("id", "account_type") \
-        .agg(f.round(f.sum("amount"),
-                     2).alias("total_amount"))
+        .agg(f.round(f.sum("amount"), ROUND_DIGITS).alias("total_amount"))
     # f.concat_ws(",", f.collect_list("account_type")).alias("account_types")
 
     l_df_trans_and_acc_info = l_df_trans_info \
@@ -241,15 +246,17 @@ def fn_get_task4_def_list():
     """
     Task 4 Data Frames List
     """
+    l_task_group_id = 4
 
     return [
-        TaskDf("4.1_person_with_biggest_balance_in_country", fn_get_richest_person_in_country_broadcast(),
+        TaskDf(l_task_group_id, "4.1_person_with_biggest_balance_in_country",
+               fn_get_richest_person_in_country_broadcast(),
                "country_full_name in ('Bulgaria','Surinam','Mauritius','Chile','Ethiopia','Peru','Mali',"
                "'Malawi','Senegal','Spain','Cuba','Belgium','Yemen','Denmark','Belgium','Ecuador',"
                "'Honduras','Peru','El Salvador','China')"),
-        TaskDf("4.2_invalid_accounts", fn_get_invalid_accounts(),
+        TaskDf(l_task_group_id, "4.2_invalid_accounts", fn_get_invalid_accounts(),
                "account_type = 'Professional' and account_id in (7253) "),
-        TaskDf("4.3_single_dataset", fn_get_all_info_broadcast(),
+        TaskDf(l_task_group_id, "4.3_single_dataset", fn_get_all_info_broadcast(),
                "id in (1,6,12,13,16,22,26)")
     ]
 
@@ -267,12 +274,19 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDf]]:
     return l_result
 
 
-def fn_get_one_task_definition(in_task_group_id: int, in_task_id: int):
+def fn_get_one_task_definition(in_task_group_id: int, in_task_id: int) -> TaskDf:
+    """
+    :param in_task_group_id:
+    :param in_task_id:
+    :return Task definition class by task group and task id:
+    """
     l_one_task_index = in_task_id - 1
     return DICT_ALL_GROUP_TASKS[in_task_group_id][l_one_task_index]
 
 
-def fn_run_dataframe_task(in_task_group_id: int = None, in_task_id: int = None):
+def fn_run_task_type(in_task_group_id: int = None,
+                     in_task_id: int = None,
+                     in_task_type: str = TASK_TYPE_DF):
     """
     Function to execute all DF from task group list
     and put them to the /opt/spark-data/df folder
@@ -283,7 +297,7 @@ def fn_run_dataframe_task(in_task_group_id: int = None, in_task_id: int = None):
     if in_task_id is None:
 
         fn_clean_up_data_folder(in_task_group_id=in_task_group_id,
-                                in_task_type=t.TASK_TYPE_DF)
+                                in_task_type=in_task_type)
 
     else:
         l_tasks_count = len(DICT_ALL_GROUP_TASKS[in_task_group_id])
@@ -307,7 +321,8 @@ def fn_run_dataframe_task(in_task_group_id: int = None, in_task_id: int = None):
         print(l_one_task_group, l_one_task_definition_list)
 
         fn_run_tasks_by_definition_list(in_task_group_id=l_one_task_group,
-                                        in_task_definition_list=l_one_task_definition_list)
+                                        in_task_definition_list=l_one_task_definition_list,
+                                        in_task_type=in_task_type)
 
 
 def fn_run_test_task(in_task_group_id: int,
@@ -320,12 +335,28 @@ def fn_run_test_task(in_task_group_id: int,
     :param in_task_group_id:
     :param in_task_id:
     :param in_task_type:
-    :return:
+    :return: None
     """
-    if in_task_type == TASK_TYPE_DF:
-        fn_run_dataframe_task(in_task_group_id=in_task_group_id, in_task_id=in_task_id)
+
+    def fn_validate_col_list(in_df: DataFrame):
+        l_validated_cols_list = []
+
+        for l_one_col in in_df.columns:
+            try:
+                int(l_one_col)
+                l_valid_col = f"`{l_one_col}`"
+            except ValueError:
+                l_valid_col = l_one_col
+
+            l_validated_cols_list.append(l_valid_col)
+
+        return l_validated_cols_list
+
+    fn_run_task_type(in_task_group_id=in_task_group_id, in_task_id=in_task_id, in_task_type=in_task_type)
 
     l_task_def = fn_get_one_task_definition(in_task_group_id=in_task_group_id, in_task_id=in_task_id)
+
+    print(l_task_def.__str__())
 
     l_folder_name = l_task_def.tgt_folder
     l_src_filter = l_task_def.test_filter_value
@@ -336,7 +367,9 @@ def fn_run_test_task(in_task_group_id: int,
 
     l_task_group_folder_name = f'task{in_task_group_id}'
 
-    l_view_name = f"{l_task_group_folder_name}_{in_task_id}_"
+    l_view_name = f"{l_task_group_folder_name}_{in_task_id}_{in_task_type}_"
+
+    l_path = f"{FOLDER_TEST}/{l_task_group_folder_name}/expected_output"
 
     l_actual_view_name = l_view_name + "actual"
     l_expected_view_name = l_view_name + "expected"
@@ -347,10 +380,10 @@ def fn_run_test_task(in_task_group_id: int,
                                in_view_name=l_actual_view_name)
     # expect
     l_df_expect = fn_create_df_from_csv_file(in_file_name=l_folder_name,
-                                             in_file_path=f"{FOLDER_TEST}/{l_task_group_folder_name}/expected_output",
+                                             in_file_path=l_path,
                                              in_view_name=l_expected_view_name)
 
-    l_cols = ",".join(l_df_expect.columns)
+    l_cols = ",".join(fn_validate_col_list(l_df_expect))
 
     l_sql = f"""
         SELECT 
@@ -392,9 +425,12 @@ DICT_OF_ALL_CORE_DF = {t.ACCOUNTS: DF_ACCOUNTS,
 DICT_ALL_GROUP_TASKS = fn_get_dict_with_all_tasks()
 
 if __name__ == "__main__":
-    l_args = t.fn_init_argparse()
+    l_args = t.fn_init_argparse(TASK_TYPE_DF)
     l_args = l_args.parse_args()
     l_group_id = l_args.group_id
     l_task_id = l_args.task_id
+    l_task_type = l_args.task_type
 
-    fn_run_dataframe_task(in_task_group_id=l_group_id, in_task_id=l_task_id)
+    fn_run_task_type(in_task_group_id=l_group_id,
+                     in_task_id=l_task_id,
+                     in_task_type=l_task_type)

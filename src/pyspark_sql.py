@@ -5,7 +5,7 @@ import pathlib
 import argparse
 import os
 import shutil
-from typing import List, NamedTuple
+from typing import List
 
 from pyspark.sql import SparkSession, DataFrame
 
@@ -15,6 +15,7 @@ COUNTRY_ABBREVIATION = 'country_abbreviation'
 
 TASK_TYPE_SQL = "sql"
 TASK_TYPE_DF = "df"
+TASK_TYPES_LIST = [TASK_TYPE_DF, TASK_TYPE_SQL]
 
 _APP_NAME = "py_spark_tasks"
 
@@ -23,21 +24,55 @@ FOLDER_DATA: str = os.environ.get("SPARK_DATA", "/opt/spark-data")
 FOLDER_APPS: str = os.environ.get("SPARK_APPS", "/opt/spark-apps")
 FOLDER_TEST: str = os.environ.get("SPARK_TEST", "/opt/spark-test")
 SPARK_SESSION: SparkSession = SparkSession.builder.appName(_APP_NAME).getOrCreate()
+ROUND_DIGITS: int = 2
 
 _DF_PARTITIONS_COUNT: int = 20
 _SEPARATOR: str = ";"
 
 
-class TaskDf(NamedTuple):
+def fn_get_sql_task_folder_path(in_task_group_id: int) -> str:
+    """
+    :param in_task_group_id:
+    :return: path to the folder with SQLs
+    """
+    return f"{FOLDER_APPS}/sql/task{in_task_group_id}"
+
+
+class TaskDf:
     """
     Class for task dataframe definition
     """
+    task_group_id: int
     tgt_folder: str
     data_frame: DataFrame
     test_filter_value: str = STR_TRUE
+    sql: str = ""
+
+    def __str__(self):
+        l_nl = "\n"
+        l_str = "**************************" + l_nl
+        l_str += f" task_group_id : {self.task_group_id} " + l_nl
+        l_str += f" tgt_folder : {self.tgt_folder} " + l_nl
+        l_str += f" test_filter_value : {self.test_filter_value} " + l_nl
+        l_str += "**************************" + l_nl
+        l_str += f" data_frame : {self.data_frame} " + l_nl
+        l_str += f" sql : {self.sql} " + l_nl
+        l_str += "**************************" + l_nl
+
+        return l_str
+
+    def __init__(self, in_task_group_id, in_tgt_folder, in_data_frame, in_test_filter_value=STR_TRUE):
+        self.task_group_id = in_task_group_id
+        self.tgt_folder = in_tgt_folder
+        self.data_frame = in_data_frame
+        self.test_filter_value = in_test_filter_value
+
+        with open("{}/{}.sql".format(fn_get_sql_task_folder_path(self.task_group_id),
+                                     self.tgt_folder), "r", encoding="UTF-8") as file:
+            self.sql = file.read()
 
 
-def fn_init_argparse() -> argparse.ArgumentParser:
+def fn_init_argparse(in_def_task_type) -> argparse.ArgumentParser:
     """
     Argument parser
     """
@@ -51,6 +86,10 @@ def fn_init_argparse() -> argparse.ArgumentParser:
 
     parser.add_argument(
         "-t", "--task_id", default=None, type=int
+    )
+
+    parser.add_argument(
+        "-tt", "--task_type", default=in_def_task_type, type=str
     )
 
     return parser
@@ -145,16 +184,25 @@ def fn_run_task(in_tgt_folder: str,
 
 
 def fn_run_tasks_by_definition_list(in_task_group_id: int,
-                                    in_task_definition_list: List[TaskDf]):
+                                    in_task_definition_list: List[TaskDf],
+                                    in_task_type: str,
+                                    in_repartition_tgt: int = 1):
     """
     Function to execute DF functions based on DF list
     """
 
     for l_one_task_df in in_task_definition_list:
-        fn_run_task_df(in_task_group_id=in_task_group_id,
-                       in_tgt_folder=l_one_task_df.tgt_folder,
-                       in_data_frame=l_one_task_df.data_frame,
-                       in_repartition_tgt=1)
+
+        if in_task_type == TASK_TYPE_DF:
+            fn_run_task_df(in_task_group_id=in_task_group_id,
+                           in_tgt_folder=l_one_task_df.tgt_folder,
+                           in_data_frame=l_one_task_df.data_frame,
+                           in_repartition_tgt=in_repartition_tgt)
+        elif in_task_type == TASK_TYPE_SQL:
+            fn_run_task_sql(in_task_group_id=in_task_group_id,
+                            in_tgt_folder=l_one_task_df.tgt_folder,
+                            in_sql=l_one_task_df.sql,
+                            in_repartition_tgt=in_repartition_tgt)
 
 
 def fn_run_task_sql(in_tgt_folder: str,
@@ -249,7 +297,7 @@ def fn_run_task_group_sql(in_task_group_id: int):
                             in_task_type=TASK_TYPE_SQL)
 
     for l_one_task_group_id in l_range:
-        l_task_sql_folder = f"{FOLDER_APPS}/sql/task{l_one_task_group_id}"
+        l_task_sql_folder = fn_get_sql_task_folder_path(l_one_task_group_id)
 
         # constructing the path object
         l_dir = pathlib.Path(l_task_sql_folder)
@@ -272,7 +320,7 @@ def fn_run_task_group_sql(in_task_group_id: int):
 
 
 if __name__ == "__main__":
-    l_args = fn_init_argparse()
+    l_args = fn_init_argparse(TASK_TYPE_SQL)
     l_args = l_args.parse_args()
     l_group_id = l_args.group_id
 
