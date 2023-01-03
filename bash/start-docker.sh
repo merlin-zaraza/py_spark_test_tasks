@@ -4,9 +4,10 @@ set -eEu
 set -o pipefail
 
 typeset -l L_IN_BUILD_IMAGE=${1:-n}
-typeset -l L_IN_SPARK_VERSION=${2:-3.0.2}
-typeset -l L_IN_HADOOP_VERSION=${3:-3.2}
-typeset -l L_IN_IMAGE_NAME=${4:-cluster-apache-spark}
+typeset -l L_IN_RUN_TEST=${2:-n}
+typeset -l L_IN_SPARK_VERSION=${3:-3.0.2}
+typeset -l L_IN_HADOOP_VERSION=${4:-3.2}
+typeset -l L_IN_IMAGE_NAME=${5:-cluster-apache-spark}
 
 typeset -l l_proj_folder
 
@@ -69,6 +70,12 @@ if ! fn_get_proj_folder ; then
 
 fi
 
-fn_run_command "docker container exec -it ${l_proj_folder}-spark-master-1 /bin/bash" \
+l_test_cmd=""
+
+if  [[ "$L_IN_RUN_TEST" == "y" ]]; then
+  l_test_cmd="-c 'pytest /opt/spark-test'"
+fi
+
+fn_run_command "docker container exec -it ${l_proj_folder}-spark-master-1 /bin/bash $l_test_cmd"  \
                "Cannot connect to the master"\
                "50"

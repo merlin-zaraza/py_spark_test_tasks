@@ -1,0 +1,22 @@
+id;first_name;last_name;age;country_full_name;account_type;total_amount
+1;Darcy;Phillips;24;Yemen;Business;12684.18
+1;Darcy;Phillips;24;Yemen;Professional;17381.85
+1;Darcy;Phillips;24;Yemen;Personal;21843.72
+6;Miley;Perry;27;South Africa;Professional;16078.12
+6;Miley;Perry;27;South Africa;Personal;30046.51
+6;Miley;Perry;27;South Africa;Business;9486.71
+12;Vincent;Adams;51;China;Personal;13878.61
+12;Vincent;Adams;51;China;Business;9396.16
+12;Vincent;Adams;51;China;Professional;9723.56
+13;James;Barnes;56;Hong Kong;Professional;13526.8
+13;James;Barnes;56;Hong Kong;Personal;21136.47
+13;James;Barnes;56;Hong Kong;Business;5159.45
+16;Isabella;Elliott;47;Colombia;Business;17619.02
+16;Isabella;Elliott;47;Colombia;Professional;14054.65
+16;Isabella;Elliott;47;Colombia;Personal;20460.74
+22;Aston;Sullivan;18;Japan;Personal;6133.36
+22;Aston;Sullivan;18;Japan;Business;24840.37
+22;Aston;Sullivan;18;Japan;Professional;29868.22
+26;Nicholas;West;40;Thailand;Professional;23880.57
+26;Nicholas;West;40;Thailand;Business;15620.67
+26;Nicholas;West;40;Thailand;Personal;11487.9

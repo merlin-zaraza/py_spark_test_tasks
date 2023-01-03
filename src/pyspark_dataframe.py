@@ -32,20 +32,21 @@ def fn_get_task1_def_list():
     ]
 
 
+def fn_inner_join_acc_names_to_df(in_dataframe: t.DataFrame) -> t.DataFrame:
+    """
+    Inner join of "first_name", "last_name" by id
+    """
+
+    return in_dataframe.join(
+        f.broadcast(DF_ACCOUNTS.select("id", "first_name", "last_name")),
+        "id",
+        "inner")
+
+
 def fn_get_task2_def_list():
     """
     Task 2 Data Frames List
     """
-
-    def fn_inner_join_acc_names_to_df(in_dataframe: t.DataFrame) -> t.DataFrame:
-        """
-        Inner join of "first_name", "last_name" by id
-        """
-
-        return in_dataframe.join(
-            f.broadcast(DF_ACCOUNTS.select("id", "first_name", "last_name")),
-            "id",
-            "inner")
 
     l_df_accounts_btw_18_30 = DF_ACCOUNTS.selectExpr(
         "id",
@@ -130,7 +131,7 @@ def fn_get_task3_def_list():
         .limit(10)
 
     l_df_clients_sorted_by_first_name_descending = DF_ACCOUNTS \
-        .select("first_name", "last_name") \
+        .select("first_name", "last_name").distinct() \
         .orderBy(f.col("first_name").desc())
 
     return [
@@ -144,42 +145,49 @@ def fn_get_task3_def_list():
                "id in ( 1,2,4,6,7,11,12,13,15,17,19,22,23,24,27,28,30,31,32,33 )"),
         TaskDf("3.3_account_types_count", l_df_account_types_count),
         TaskDf("3.4_top_10_positive", l_df_top_10_positive),
-        TaskDf("3.5_clients_sorted_by_first_name_descending", l_df_clients_sorted_by_first_name_descending),
+        TaskDf("3.5_clients_sorted_by_first_name_descending", l_df_clients_sorted_by_first_name_descending,
+               "first_name in ('Wilson') and "
+               "last_name  in ('Mitchell','Anderson','Cameron','Gray','Barnes',"
+               "'Williams','Stewart','Elliott','Cole',"
+               "'Tucker','Stewart','Ferguson','Davis','Higgins','Perry','Riley',"
+               "'Edwards','Richards','Myers','Johnson')"
+               ),
     ]
 
 
-def fn_get_richest_person_broadcast():
+def fn_get_richest_person_in_country_broadcast():
     """
     DF for richest person using broadcast
     """
 
-    l_richest_person_transactions = DF_TRANSACTIONS.select(
+    l_richest_person_transactions = DF_TRANSACTIONS.selectExpr(
         "id",
-        "amount",
+        "amount"
     ).groupBy("id") \
-        .agg(f.sum("amount").alias("total_amount")) \
-        .orderBy(f.col("total_amount").desc()) \
-        .limit(1) \
-        .first()
+        .agg(
+        f.round(f.sum("amount"), 2).alias("total_amount")
+    )
 
-    l_id = l_richest_person_transactions['id']
-    l_total_amount = l_richest_person_transactions['total_amount']
-
-    l_df_l_richest_person_account = DF_ACCOUNTS.select(
-        f.col("id"),
-        f.col("first_name"),
-        f.col("last_name"),
-        f.col("country").alias("abbreviation"),
-        f.lit(l_total_amount).alias("total_amount"),
-    ).where(f"id = '{l_id}'")
-
-    l_df_richest_person_account_all_info = DF_COUNTRY_ABBREVIATION.join(
-        f.broadcast(l_df_l_richest_person_account),
-        "abbreviation",
+    l_df_richest_person_account_info = l_richest_person_transactions.join(
+        f.broadcast(DF_ACCOUNTS),
+        "id",
         "inner"
-    ).drop("country", "abbreviation", "id")
+    ).withColumn(colName="rn", col=f.expr("row_number() over (partition by country order by total_amount desc)")) \
+        .selectExpr(
+        "id",
+        "first_name",
+        "last_name",
+        "country",
+        "total_amount",
+    ).where("rn  == 1 ")
 
-    return l_df_richest_person_account_all_info
+    l_df_richest_person_all_info = l_df_richest_person_account_info.join(
+        f.broadcast(DF_COUNTRY_ABBREVIATION),
+        DF_COUNTRY_ABBREVIATION.abbreviation == l_df_richest_person_account_info.country,
+        "inner"
+    ).drop("abbreviation", "country", "id")
+
+    return l_df_richest_person_all_info
 
 
 def fn_get_invalid_accounts():
@@ -211,7 +219,8 @@ def fn_get_all_info_broadcast():
                 "amount",
                 "account_type") \
         .groupBy("id", "account_type") \
-        .agg(f.sum("amount").alias("total_amount"))
+        .agg(f.round(f.sum("amount"),
+                     2).alias("total_amount"))
     # f.concat_ws(",", f.collect_list("account_type")).alias("account_types")
 
     l_df_trans_and_acc_info = l_df_trans_info \
@@ -234,9 +243,14 @@ def fn_get_task4_def_list():
     """
 
     return [
-        TaskDf("4.1_person_with_biggest_balance", fn_get_richest_person_broadcast()),
-        TaskDf("4.2_invalid_accounts", fn_get_invalid_accounts()),
-        TaskDf("4.3_single_dataset", fn_get_all_info_broadcast()),
+        TaskDf("4.1_person_with_biggest_balance_in_country", fn_get_richest_person_in_country_broadcast(),
+               "country_full_name in ('Bulgaria','Surinam','Mauritius','Chile','Ethiopia','Peru','Mali',"
+               "'Malawi','Senegal','Spain','Cuba','Belgium','Yemen','Denmark','Belgium','Ecuador',"
+               "'Honduras','Peru','El Salvador','China')"),
+        TaskDf("4.2_invalid_accounts", fn_get_invalid_accounts(),
+               "account_type = 'Professional' and account_id in (7253) "),
+        TaskDf("4.3_single_dataset", fn_get_all_info_broadcast(),
+               "id in (1,6,12,13,16,22,26)")
     ]
 
 
