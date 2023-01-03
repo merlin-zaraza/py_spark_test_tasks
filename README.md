@@ -7,6 +7,11 @@
 
 ##Requirements:
 * Docker ( on Linux or with WSL support to run bash scripts )
+  * 6 cores, 12 GB RAM
+    - SPARK_WORKER_CORES : 2 * 3
+    - SPARK_WORKER_MEMORY : 2G * 3
+    - SPARK_DRIVER_MEMORY : 1G * 3
+    - SPARK_EXECUTOR_MEMORY : 1G * 3
 
 ##How work with project environment:
 1. For first time run use L_IN_BUILD_IMAGE = "y" it will build spark cluster image : ./bash/start-docker.sh y
