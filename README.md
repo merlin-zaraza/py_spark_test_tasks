@@ -1,11 +1,11 @@
 # Test project for pyspark
-##Goals : 
+## Goals : 
 1. Use spark sql and dataframes API for data processing
 2. Create docker image and run spark cluster (1 master 2 workers) on it
 3. Create own data comparison framework
 4. Test created all transformations for SQL and Dataframe api using pytest-spark  
 
-##Requirements:
+## Requirements:
 * Docker ( on Linux or with WSL support to run bash scripts )
   * 6 cores, 12 GB RAM
     - SPARK_WORKER_CORES : 2 * 3
@@ -13,14 +13,14 @@
     - SPARK_DRIVER_MEMORY : 1G * 3
     - SPARK_EXECUTOR_MEMORY : 1G * 3
 
-##How work with project environment:
+## How work with project environment:
 1. For first time run use L_IN_BUILD_IMAGE = "y" it will build spark cluster image : ./bash/start-docker.sh y
 2. To connect to docker container execute : ./bash/start-docker.sh n
 3. To run tests ./bash/start-docker.sh n
 4. To run failed tests ./bash/start-docker.sh f
 
 
-##Project data
+## Project data
 Tasks Description:
 * Task_Description.txt
 
