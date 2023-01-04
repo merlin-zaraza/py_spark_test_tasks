@@ -37,7 +37,7 @@ Expected outputs:
 * test/task1/expected_output/..
 * test/task../expected_output/..
 
-##Project realisation files
+## Project realisation files
 * src/pyspark_sql.py - general logic for tasks implementation using sql/df together with testing framework
 * src/pyspark_dataframe.py - dataframes definition
 * src/sql/.. - sql files with the same logic as for dataframes 
