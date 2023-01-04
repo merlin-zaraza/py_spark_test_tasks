@@ -14,10 +14,10 @@
     - SPARK_EXECUTOR_MEMORY : 1G * 3
 
 ## How work with project environment:
-1. For first time run use L_IN_BUILD_IMAGE = "y" it will build spark cluster image : ./bash/start-docker.sh y
-2. To connect to docker container execute : ./bash/start-docker.sh n
-3. To run tests ./bash/start-docker.sh n
-4. To run failed tests ./bash/start-docker.sh f
+1. First time execution needs flag L_IN_BUILD_IMAGE = "y" : ./bash/start-docker.sh y
+2. To connect to docker container : ./bash/start-docker.sh n
+3. To run all tests : ./bash/start-docker.sh n y
+4. To run failed tests : ./bash/start-docker.sh n f
 
 
 ## Project data
