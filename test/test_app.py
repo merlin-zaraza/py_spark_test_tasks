@@ -15,6 +15,7 @@ l_dict_tasks_tuple = "in_task_group_id,in_task_id", [
     (4, 1), (4, 2), (4, 3)
 ]
 
+
 @pytest.mark.spark
 @pytest.mark.parametrize("in_task_group_id,in_task_id",
                          [
