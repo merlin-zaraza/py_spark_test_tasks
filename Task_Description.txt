@@ -1,4 +1,5 @@
 TASKS
+Show  all values with 2 decimal places.
 
 1 Spark SQL—show information using SQL query
     Prepare structure type for account.csv, transactions.csv, and country_abbreviation.csv.
@@ -18,15 +19,15 @@ TASKS
 3 Spark built-in functions for data processing
     Prepare structure type for account.csv and transactions.csv using an alias for specific data.
 
-    Show first_name and last_name from account.csv as a single column.
-    Show average transaction amount in 2021 year for each client_id. Show values with 2 decimal places.
+    Show distinct values for first_name and last_name from account.csv as a single column.
+    Show average transaction amount in 2021 year for each client_id.
     How many accounts of each type do we have? (The same as in the first task, but use Spark built-in functions without SQL query this time)
     Show the top 10 accounts by the sum of positive transactions.
-    Show clients, ordered by first_name descending.
+    Show distinct clients, ordered by first_name descending.
     
 4 Broadcast and Join
     Use Broadcast and Join functions while completing these tasks.
 
-    Find the first name, last name, and country full name of the person with the biggest balance on his/her account using the Broadcast function.
+    Find the first name, last name, and country full name of the person with the biggest balance on his/her in the country account using the Broadcast function.
     Show invalid accounts (where age is less than 26 and account_type=Professional).
     Show ID, first_name, last_name, age, country full name, balance, and account_type like a single dataset.
