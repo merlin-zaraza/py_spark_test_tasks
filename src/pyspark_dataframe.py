@@ -411,9 +411,9 @@ def fn_run_test_task(in_task_group_id: int,
         raise AssertionError(f"Test has failed for '{l_folder_name}'. Difference found")
 
 
-def fn_df_to_parquet_file(in_df_dict: Dict = DICT_CORE_DF):
+def fn_df_to_parquet_file(in_df_dict: Dict):
     for l_one_df_name, l_one_df in in_df_dict.items():
-        t.fn_run_task(in_tgt_folder=l_one_df_name,
+        t.fn_run_task(in_tgt_folder=f"tables/{l_one_df_name}",
                       in_data_frame=l_one_df,
                       in_tgt_path=t.FOLDER_DATA,
                       in_output_file_type=t.FILE_TYPE_PARQUET)
@@ -435,6 +435,8 @@ if __name__ == "__main__":
     l_group_id = l_args.group_id
     l_task_id = l_args.task_id
     l_task_type = l_args.task_type
+
+    # fn_df_to_parquet_file(DICT_CORE_DF)
 
     fn_run_task_type(in_task_group_id=l_group_id,
                      in_task_id=l_task_id,
