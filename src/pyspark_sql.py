@@ -7,7 +7,7 @@ import os
 import shutil
 from typing import List, Dict
 
-from pyspark.sql import SparkSession, DataFrame
+from pyspark.sql import SparkSession, DataFrame, DataFrameWriter
 
 ACCOUNTS = 'accounts'
 TRANSACTIONS = 'transactions'
@@ -194,6 +194,12 @@ def fn_run_task(in_tgt_folder: str,
     Function to write Data Frame Output to file using DF or Spark SQL
     """
 
+    def fn_add_csv_options(in_df: DataFrameWriter) -> DataFrameWriter:
+        return in_df \
+            .option("header", STR_TRUE) \
+            .option("inferSchema", STR_TRUE) \
+            .option("sep", _SEPARATOR)
+
     l_type = TASK_TYPE_DF
     l_df = in_data_frame
 
@@ -215,21 +221,14 @@ def fn_run_task(in_tgt_folder: str,
                 .write.mode(in_mode) \
                 .parquet(l_path)
         else:
-            l_df.repartition(in_repartition_tgt) \
-                .write.mode(in_mode) \
-                .option("header", STR_TRUE) \
-                .option("inferSchema", STR_TRUE) \
-                .option("sep", _SEPARATOR) \
+            fn_add_csv_options(l_df.repartition(in_repartition_tgt).write.mode(in_mode)) \
                 .csv(l_path)
     else:
         if in_output_file_type == FILE_TYPE_PARQUET:
             l_df.write.mode(in_mode) \
                 .parquet(l_path)
         else:
-            l_df.write.mode(in_mode) \
-                .option("header", STR_TRUE) \
-                .option("inferSchema", STR_TRUE) \
-                .option("sep", _SEPARATOR) \
+            fn_add_csv_options(l_df.write.mode(in_mode)) \
                 .csv(l_path)
 
     # l_df.show()
