@@ -26,6 +26,9 @@ FOLDER_TEST: str = os.environ.get("SPARK_TEST", "/opt/spark-test")
 SPARK_SESSION: SparkSession = SparkSession.builder.appName(_APP_NAME).getOrCreate()
 ROUND_DIGITS: int = 2
 
+FILE_TYPE_CSV: str = "csv"
+FILE_TYPE_PARQUET: str = "parquet"
+
 _DF_PARTITIONS_COUNT: int = 20
 _SEPARATOR: str = ";"
 
@@ -147,6 +150,8 @@ def fn_get_task_target_folder(in_task_type: str,
 def fn_run_task(in_tgt_folder: str,
                 in_data_frame: DataFrame = None,
                 in_sql: str = None,
+                in_output_file_type: str = FILE_TYPE_CSV,
+                in_tgt_path: str = None,
                 in_task_group_id: int = 1,
                 in_repartition_tgt: int = None,
                 in_mode: str = "overwrite"):
@@ -162,25 +167,37 @@ def fn_run_task(in_tgt_folder: str,
         l_df = SPARK_SESSION.sql(in_sql)
         l_df.explain(extended=False)
 
-    l_path = fn_get_task_target_folder(in_task_group_id=in_task_group_id,
-                                       in_task_type=l_type,
-                                       in_tgt_folder=in_tgt_folder)
+    if in_tgt_path is not None:
+        l_path = "{}/{}".format(in_tgt_path, in_tgt_folder)
+    else:
+        l_path = fn_get_task_target_folder(in_task_group_id=in_task_group_id,
+                                           in_task_type=l_type,
+                                           in_tgt_folder=in_tgt_folder)
 
     if (in_repartition_tgt is not None) and in_repartition_tgt > 0:
-        l_df.repartition(in_repartition_tgt) \
-            .write.mode(in_mode) \
-            .option("header", STR_TRUE) \
-            .option("inferSchema", STR_TRUE) \
-            .option("sep", _SEPARATOR) \
-            .csv(l_path)
+        if in_output_file_type == FILE_TYPE_PARQUET:
+            l_df.repartition(in_repartition_tgt) \
+                .write.mode(in_mode) \
+                .parquet(l_path)
+        else:
+            l_df.repartition(in_repartition_tgt) \
+                .write.mode(in_mode) \
+                .option("header", STR_TRUE) \
+                .option("inferSchema", STR_TRUE) \
+                .option("sep", _SEPARATOR) \
+                .csv(l_path)
     else:
-        l_df.write.mode(in_mode) \
-            .option("header", STR_TRUE) \
-            .option("inferSchema", STR_TRUE) \
-            .option("sep", _SEPARATOR) \
-            .csv(l_path)
+        if in_output_file_type == FILE_TYPE_PARQUET:
+            l_df.write.mode(in_mode) \
+                .parquet(l_path)
+        else:
+            l_df.write.mode(in_mode) \
+                .option("header", STR_TRUE) \
+                .option("inferSchema", STR_TRUE) \
+                .option("sep", _SEPARATOR) \
+                .csv(l_path)
 
-    l_df.show()
+    # l_df.show()
 
 
 def fn_run_tasks_by_definition_list(in_task_group_id: int,

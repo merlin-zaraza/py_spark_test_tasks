@@ -1,6 +1,7 @@
-data/*
+data/df/task*
+data/sql/task*
+data/*.csv
 workspace.xml
-*.parquet
 *.crc
 _SUCCESS
 .pytest_cache

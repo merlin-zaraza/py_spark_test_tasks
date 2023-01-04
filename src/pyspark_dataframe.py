@@ -6,10 +6,9 @@ from typing import Dict, List
 from pyspark.sql import functions as f, DataFrame
 
 import pyspark_sql as t
+from pyspark_sql import TaskDf
 
-from pyspark_sql import TaskDf, fn_get_task_group_range, fn_clean_up_data_folder, fn_run_tasks_by_definition_list, \
-    fn_create_df_from_csv_file, TASK_TYPE_DF, FOLDER_TEST, SPARK_SESSION, ROUND_DIGITS, \
-    fn_get_task_target_folder
+DICT_CORE_DF: Dict = {}
 
 
 def fn_get_task1_def_list():
@@ -23,7 +22,7 @@ def fn_get_task1_def_list():
 
     l_df_account_balance = DF_TRANSACTIONS \
         .groupBy(f.col("id")) \
-        .agg(f.round(f.sum("amount"), ROUND_DIGITS).alias("balance"),
+        .agg(f.round(f.sum("amount"), t.ROUND_DIGITS).alias("balance"),
              f.max("transaction_date").alias("latest_date"))
 
     l_task_group_id = 1
@@ -78,8 +77,8 @@ def fn_get_task2_def_list():
         " case when amount < 0 then amount else 0 end as expenses",
         " case when amount > 0 then amount else 0 end as earnings "
     ).groupBy("id") \
-        .agg(f.round(f.abs(f.sum("expenses")), ROUND_DIGITS).alias("expenses"),
-             f.round(f.sum("earnings"), ROUND_DIGITS).alias("earnings"))
+        .agg(f.round(f.abs(f.sum("expenses")), t.ROUND_DIGITS).alias("expenses"),
+             f.round(f.sum("earnings"), t.ROUND_DIGITS).alias("earnings"))
 
     l_df_total_expenses_with_user_info = fn_inner_join_acc_names_to_df(l_df_total_expenses)
 
@@ -89,7 +88,7 @@ def fn_get_task2_def_list():
         "int(substring(transaction_date, 1, 4)) as tr_year",
     ).groupBy("id") \
         .pivot("tr_year") \
-        .agg(f.round(f.sum("earnings").alias("earnings"), ROUND_DIGITS)) \
+        .agg(f.round(f.sum("earnings").alias("earnings"), t.ROUND_DIGITS)) \
         .fillna(value=0)
 
     l_task_group_id = 2
@@ -120,7 +119,7 @@ def fn_get_task3_def_list():
         "amount"
     ).where("transaction_date like '2021%'") \
         .groupBy("id") \
-        .agg(f.round(f.avg("amount"), ROUND_DIGITS).alias("avg_amount"))
+        .agg(f.round(f.avg("amount"), t.ROUND_DIGITS).alias("avg_amount"))
 
     l_df_account_types_count = DF_TRANSACTIONS \
         .groupBy(f.col("account_type")) \
@@ -128,7 +127,7 @@ def fn_get_task3_def_list():
 
     l_df_top_10_positive = DF_TRANSACTIONS.where("amount > 0") \
         .groupBy("id") \
-        .agg(f.round(f.sum("amount"), ROUND_DIGITS).alias("total_amount")) \
+        .agg(f.round(f.sum("amount"), t.ROUND_DIGITS).alias("total_amount")) \
         .orderBy(f.col("total_amount").desc()) \
         .limit(10)
 
@@ -171,7 +170,7 @@ def fn_get_richest_person_in_country_broadcast():
         "amount"
     ).groupBy("id") \
         .agg(
-        f.round(f.sum("amount"), ROUND_DIGITS).alias("total_amount")
+        f.round(f.sum("amount"), t.ROUND_DIGITS).alias("total_amount")
     )
 
     l_df_richest_person_account_info = l_richest_person_transactions.join(
@@ -188,8 +187,8 @@ def fn_get_richest_person_in_country_broadcast():
     ).where("rn  == 1 ")
 
     l_df_richest_person_all_info = l_df_richest_person_account_info.join(
-        f.broadcast(DF_COUNTRY_ABBREVIATION),
-        DF_COUNTRY_ABBREVIATION.abbreviation == l_df_richest_person_account_info.country,
+        f.broadcast(DF_COUNTRY_ABBR),
+        DF_COUNTRY_ABBR.abbreviation == l_df_richest_person_account_info.country,
         "inner"
     ).drop("abbreviation", "country", "id")
 
@@ -225,7 +224,7 @@ def fn_get_all_info_broadcast():
                 "amount",
                 "account_type") \
         .groupBy("id", "account_type") \
-        .agg(f.round(f.sum("amount"), ROUND_DIGITS).alias("total_amount"))
+        .agg(f.round(f.sum("amount"), t.ROUND_DIGITS).alias("total_amount"))
     # f.concat_ws(",", f.collect_list("account_type")).alias("account_types")
 
     l_df_trans_and_acc_info = l_df_trans_info \
@@ -235,7 +234,7 @@ def fn_get_all_info_broadcast():
         .withColumnRenamed("country", "abbreviation")
 
     l_df_all_info = l_df_trans_and_acc_info \
-        .join(f.broadcast(DF_COUNTRY_ABBREVIATION),
+        .join(f.broadcast(DF_COUNTRY_ABBR),
               "abbreviation",
               "inner").drop("abbreviation")
 
@@ -267,7 +266,7 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDf]]:
     """
     l_result = {}
 
-    for l_one_task_id in fn_get_task_group_range():
+    for l_one_task_id in t.fn_get_task_group_range():
         handler = getattr(sys.modules[__name__], f'fn_get_task{l_one_task_id}_def_list')
         l_result.setdefault(l_one_task_id, handler())
 
@@ -286,18 +285,18 @@ def fn_get_one_task_definition(in_task_group_id: int, in_task_id: int) -> TaskDf
 
 def fn_run_task_type(in_task_group_id: int = None,
                      in_task_id: int = None,
-                     in_task_type: str = TASK_TYPE_DF):
+                     in_task_type: str = t.TASK_TYPE_DF):
     """
     Function to execute all DF from task group list
     and put them to the /opt/spark-data/df folder
     """
 
-    l_range = fn_get_task_group_range(in_task_group_id)
+    l_range = t.fn_get_task_group_range(in_task_group_id)
 
     if in_task_id is None:
 
-        fn_clean_up_data_folder(in_task_group_id=in_task_group_id,
-                                in_task_type=in_task_type)
+        t.fn_clean_up_data_folder(in_task_group_id=in_task_group_id,
+                                  in_task_type=in_task_type)
 
     else:
         l_tasks_count = len(DICT_ALL_GROUP_TASKS[in_task_group_id])
@@ -320,14 +319,14 @@ def fn_run_task_type(in_task_group_id: int = None,
 
         print(l_one_task_group, l_one_task_definition_list)
 
-        fn_run_tasks_by_definition_list(in_task_group_id=l_one_task_group,
-                                        in_task_definition_list=l_one_task_definition_list,
-                                        in_task_type=in_task_type)
+        t.fn_run_tasks_by_definition_list(in_task_group_id=l_one_task_group,
+                                          in_task_definition_list=l_one_task_definition_list,
+                                          in_task_type=in_task_type)
 
 
 def fn_run_test_task(in_task_group_id: int,
                      in_task_id: int,
-                     in_task_type: str = TASK_TYPE_DF):
+                     in_task_type: str = t.TASK_TYPE_DF):
     """
     Function for test execution, compares input and output files
     In case of difference raise error and shows rows with diff values.
@@ -356,32 +355,30 @@ def fn_run_test_task(in_task_group_id: int,
 
     l_task_def = fn_get_one_task_definition(in_task_group_id=in_task_group_id, in_task_id=in_task_id)
 
-    print(l_task_def.__str__())
-
     l_folder_name = l_task_def.tgt_folder
     l_src_filter = l_task_def.test_filter_value
 
-    l_folder_path = fn_get_task_target_folder(in_task_type=in_task_type,
-                                              in_task_group_id=in_task_group_id,
-                                              in_tgt_folder=l_folder_name)
+    l_folder_path = t.fn_get_task_target_folder(in_task_type=in_task_type,
+                                                in_task_group_id=in_task_group_id,
+                                                in_tgt_folder=l_folder_name)
 
     l_task_group_folder_name = f'task{in_task_group_id}'
 
     l_view_name = f"{l_task_group_folder_name}_{in_task_id}_{in_task_type}_"
 
-    l_path = f"{FOLDER_TEST}/{l_task_group_folder_name}/expected_output"
+    l_path = f"{t.FOLDER_TEST}/{l_task_group_folder_name}/expected_output"
 
     l_actual_view_name = l_view_name + "actual"
     l_expected_view_name = l_view_name + "expected"
 
     # ACT
-    fn_create_df_from_csv_file(in_file_name="*",
-                               in_file_path=l_folder_path,
-                               in_view_name=l_actual_view_name)
+    t.fn_create_df_from_csv_file(in_file_name="*",
+                                 in_file_path=l_folder_path,
+                                 in_view_name=l_actual_view_name)
     # expect
-    l_df_expect = fn_create_df_from_csv_file(in_file_name=l_folder_name,
-                                             in_file_path=l_path,
-                                             in_view_name=l_expected_view_name)
+    l_df_expect = t.fn_create_df_from_csv_file(in_file_name=l_folder_name,
+                                               in_file_path=l_path,
+                                               in_view_name=l_expected_view_name)
 
     l_cols = ",".join(fn_validate_col_list(l_df_expect))
 
@@ -404,7 +401,7 @@ def fn_run_test_task(in_task_group_id: int,
 
     print(f"Running sql : {l_sql}")
 
-    l_df_diff = SPARK_SESSION.sql(l_sql)
+    l_df_diff = t.SPARK_SESSION.sql(l_sql)
     l_diff_cnt = l_df_diff.count()
 
     if l_diff_cnt == 0:
@@ -414,18 +411,26 @@ def fn_run_test_task(in_task_group_id: int,
         raise AssertionError(f"Test has failed for '{l_folder_name}'. Difference found")
 
 
-DF_ACCOUNTS: DataFrame = fn_create_df_from_csv_file(in_file_name=t.ACCOUNTS)
-DF_TRANSACTIONS: DataFrame = fn_create_df_from_csv_file(in_file_name=t.TRANSACTIONS)
-DF_COUNTRY_ABBREVIATION: DataFrame = fn_create_df_from_csv_file(in_file_name=t.COUNTRY_ABBREVIATION)
+def fn_df_to_parquet_file(in_df_dict: Dict = DICT_CORE_DF):
+    for l_one_df_name, l_one_df in in_df_dict.items():
+        t.fn_run_task(in_tgt_folder=l_one_df_name,
+                      in_data_frame=l_one_df,
+                      in_tgt_path=t.FOLDER_DATA,
+                      in_output_file_type=t.FILE_TYPE_PARQUET)
 
-DICT_OF_ALL_CORE_DF = {t.ACCOUNTS: DF_ACCOUNTS,
-                       t.TRANSACTIONS: DF_TRANSACTIONS,
-                       t.COUNTRY_ABBREVIATION: DF_COUNTRY_ABBREVIATION}
+
+DF_ACCOUNTS: DataFrame = t.fn_create_df_from_csv_file(in_file_name=t.ACCOUNTS)
+DF_TRANSACTIONS: DataFrame = t.fn_create_df_from_csv_file(in_file_name=t.TRANSACTIONS)
+DF_COUNTRY_ABBR: DataFrame = t.fn_create_df_from_csv_file(in_file_name=t.COUNTRY_ABBREVIATION)
+
+DICT_CORE_DF = {t.ACCOUNTS: DF_ACCOUNTS,
+                t.TRANSACTIONS: DF_TRANSACTIONS,
+                t.COUNTRY_ABBREVIATION: DF_COUNTRY_ABBR}
 
 DICT_ALL_GROUP_TASKS = fn_get_dict_with_all_tasks()
 
 if __name__ == "__main__":
-    l_args = t.fn_init_argparse(TASK_TYPE_DF)
+    l_args = t.fn_init_argparse(t.TASK_TYPE_DF)
     l_args = l_args.parse_args()
     l_group_id = l_args.group_id
     l_task_id = l_args.task_id
