@@ -8,9 +8,6 @@ from pyspark.sql import functions as f, DataFrame
 import pyspark_sql as t
 from pyspark_sql import TaskDf
 
-DICT_CORE_DF: Dict = {}
-
-
 def fn_get_task1_def_list():
     """
     Task 1 Data Frames List
@@ -273,158 +270,9 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDf]]:
     return l_result
 
 
-def fn_get_one_task_definition(in_task_group_id: int, in_task_id: int) -> TaskDf:
-    """
-    :param in_task_group_id:
-    :param in_task_id:
-    :return Task definition class by task group and task id:
-    """
-    l_one_task_index = in_task_id - 1
-    return DICT_ALL_GROUP_TASKS[in_task_group_id][l_one_task_index]
-
-
-def fn_run_task_type(in_task_group_id: int = None,
-                     in_task_id: int = None,
-                     in_task_type: str = t.TASK_TYPE_DF):
-    """
-    Function to execute all DF from task group list
-    and put them to the /opt/spark-data/df folder
-    """
-
-    l_range = t.fn_get_task_group_range(in_task_group_id)
-
-    if in_task_id is None:
-
-        t.fn_clean_up_data_folder(in_task_group_id=in_task_group_id,
-                                  in_task_type=in_task_type)
-
-    else:
-        l_tasks_count = len(DICT_ALL_GROUP_TASKS[in_task_group_id])
-
-        l_list_default_task_ids = list(range(1, l_tasks_count + 1))
-
-        if in_task_id not in l_list_default_task_ids:
-            raise ValueError(f"in_task_id is not in {l_list_default_task_ids} for in_task_group_id={in_task_group_id}")
-
-    for l_one_task_group in l_range:
-
-        l_one_task_definition_list = []
-
-        if in_task_id is None:
-            l_one_task_definition_list = DICT_ALL_GROUP_TASKS[l_one_task_group]
-        else:
-            l_one_task_definition = fn_get_one_task_definition(in_task_group_id=in_task_group_id,
-                                                               in_task_id=in_task_id)
-            l_one_task_definition_list.append(l_one_task_definition)
-
-        print(l_one_task_group, l_one_task_definition_list)
-
-        t.fn_run_tasks_by_definition_list(in_task_group_id=l_one_task_group,
-                                          in_task_definition_list=l_one_task_definition_list,
-                                          in_task_type=in_task_type)
-
-
-def fn_run_test_task(in_task_group_id: int,
-                     in_task_id: int,
-                     in_task_type: str = t.TASK_TYPE_DF):
-    """
-    Function for test execution, compares input and output files
-    In case of difference raise error and shows rows with diff values.
-
-    :param in_task_group_id:
-    :param in_task_id:
-    :param in_task_type:
-    :return: None
-    """
-
-    def fn_validate_col_list(in_df: DataFrame):
-        l_validated_cols_list = []
-
-        for l_one_col in in_df.columns:
-            try:
-                int(l_one_col)
-                l_valid_col = f"`{l_one_col}`"
-            except ValueError:
-                l_valid_col = l_one_col
-
-            l_validated_cols_list.append(l_valid_col)
-
-        return l_validated_cols_list
-
-    fn_run_task_type(in_task_group_id=in_task_group_id, in_task_id=in_task_id, in_task_type=in_task_type)
-
-    l_task_def = fn_get_one_task_definition(in_task_group_id=in_task_group_id, in_task_id=in_task_id)
-
-    l_folder_name = l_task_def.tgt_folder
-    l_src_filter = l_task_def.test_filter_value
-
-    l_folder_path = t.fn_get_task_target_folder(in_task_type=in_task_type,
-                                                in_task_group_id=in_task_group_id,
-                                                in_tgt_folder=l_folder_name)
-
-    l_task_group_folder_name = f'task{in_task_group_id}'
-
-    l_view_name = f"{l_task_group_folder_name}_{in_task_id}_{in_task_type}_"
-
-    l_path = f"{t.FOLDER_TEST}/{l_task_group_folder_name}/expected_output"
-
-    l_actual_view_name = l_view_name + "actual"
-    l_expected_view_name = l_view_name + "expected"
-
-    # ACT
-    t.fn_create_df_from_csv_file(in_folder_path=l_folder_path,
-                                 in_view_name=l_actual_view_name)
-    # expect
-    l_df_expect = t.fn_create_df_from_csv_file(in_file_name=l_folder_name,
-                                               in_folder_path=l_path,
-                                               in_view_name=l_expected_view_name)
-
-    l_cols = ",".join(fn_validate_col_list(l_df_expect))
-
-    l_sql = f"""
-        SELECT 
-            {l_cols},
-             sum(actual) as total_actual, 
-             sum(expected) as total_expected 
-        FROM
-        (
-            Select {l_cols}, 1 as actual, 0 as expected from {l_actual_view_name} where {l_src_filter}   
-            UNION ALL
-            Select {l_cols}, 0 as actual, 1 as expected from {l_expected_view_name}
-        )
-        GROUP BY 
-            {l_cols}
-        HAVING
-            sum(actual) != sum(expected)                        
-    """
-
-    print(f"Running sql : {l_sql}")
-
-    l_df_diff = t.SPARK_SESSION.sql(l_sql)
-    l_diff_cnt = l_df_diff.count()
-
-    if l_diff_cnt == 0:
-        print(f'Test succeeded for {l_folder_name}')
-    else:
-        l_df_diff.orderBy(l_df_expect.columns).show()
-        raise AssertionError(f"Test has failed for '{l_folder_name}'. Difference found")
-
-
-def fn_df_to_parquet_file(in_df_dict: Dict[str, DataFrame]):
-    for l_one_df_name, l_one_df in in_df_dict.items():
-        t.fn_run_task(in_tgt_folder=l_one_df_name + "/*",
-                      in_data_frame=l_one_df,
-                      in_tgt_path=t.FOLDER_TABLES,
-                      in_output_file_type=t.FILE_TYPE_PARQUET)
-
-
 DF_ACCOUNTS: DataFrame = t.fn_create_df_from_parquet(in_sub_folder=t.ACCOUNTS)
 DF_TRANSACTIONS: DataFrame = t.fn_create_df_from_parquet(in_sub_folder=t.TRANSACTIONS)
 DF_COUNTRY_ABBR: DataFrame = t.fn_create_df_from_parquet(in_sub_folder=t.COUNTRY_ABBREVIATION)
-
-DICT_CORE_DF = {t.ACCOUNTS: DF_ACCOUNTS,
-                t.TRANSACTIONS: DF_TRANSACTIONS,
-                t.COUNTRY_ABBREVIATION: DF_COUNTRY_ABBR}
 
 DICT_ALL_GROUP_TASKS = fn_get_dict_with_all_tasks()
 
@@ -435,8 +283,7 @@ if __name__ == "__main__":
     l_task_id = l_args.task_id
     l_task_type = l_args.task_type
 
-    # fn_df_to_parquet_file(DICT_CORE_DF)
-
-    fn_run_task_type(in_task_group_id=l_group_id,
-                     in_task_id=l_task_id,
-                     in_task_type=l_task_type)
+    t.fn_run_task_type(in_task_group_id=l_group_id,
+                       in_task_id=l_task_id,
+                       in_task_type=l_task_type,
+                       in_dict_all_group_tasks=DICT_ALL_GROUP_TASKS)
