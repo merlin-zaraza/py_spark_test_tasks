@@ -23,6 +23,7 @@ STR_TRUE: str = "true"
 FOLDER_DATA: str = os.environ.get("SPARK_DATA", "/opt/spark-data")
 FOLDER_APPS: str = os.environ.get("SPARK_APPS", "/opt/spark-apps")
 FOLDER_TEST: str = os.environ.get("SPARK_TEST", "/opt/spark-test")
+FOLDER_TABLES: str = f"{FOLDER_DATA}/tables"
 SPARK_SESSION: SparkSession = SparkSession.builder.appName(_APP_NAME).getOrCreate()
 ROUND_DIGITS: int = 2
 
@@ -98,25 +99,57 @@ def fn_init_argparse(in_def_task_type) -> argparse.ArgumentParser:
     return parser
 
 
-def fn_create_df_from_csv_file(in_file_name: str,
-                               in_separator: str = _SEPARATOR,
-                               in_view_name: str = None,
-                               in_repartition: int = _DF_PARTITIONS_COUNT,
-                               in_file_path: str = FOLDER_DATA):
+def fn_get_default_view_name(in_file_name, in_view_name):
+    """
+    Function for getting default view name
+    """
+
+    return in_view_name if in_view_name else in_file_name
+
+
+def fn_create_df_from_parquet(in_file_name: str = "*",
+                              in_view_name: str = None,
+                              in_repartition: int = _DF_PARTITIONS_COUNT,
+                              in_folder_path: str = FOLDER_TABLES,
+                              in_sub_folder: str = None):
     """
     Function for registering file in SQL engine as temp view
     """
 
-    l_view_name = in_view_name if in_view_name else in_file_name
+    if in_sub_folder:
+        l_file_name = f"{in_sub_folder}/{in_file_name}"
+    else:
+        l_file_name = in_file_name
+
+    l_df = SPARK_SESSION.read \
+        .parquet(f"file://{in_folder_path}/{l_file_name}.{FILE_TYPE_PARQUET}") \
+        .repartition(in_repartition) \
+        .cache()
+
+    l_view_name = fn_get_default_view_name(in_file_name, in_view_name if in_view_name else in_sub_folder)
+    l_df.createTempView(l_view_name)
+
+    return l_df
+
+
+def fn_create_df_from_csv_file(in_file_name: str = "*",
+                               in_separator: str = _SEPARATOR,
+                               in_view_name: str = None,
+                               in_repartition: int = _DF_PARTITIONS_COUNT,
+                               in_folder_path: str = FOLDER_DATA):
+    """
+    Function for registering file in SQL engine as temp view
+    """
 
     l_df = SPARK_SESSION.read \
         .option("header", STR_TRUE) \
         .option("inferSchema", STR_TRUE) \
         .option("sep", in_separator) \
-        .csv(f"file://{in_file_path}/{in_file_name}.csv") \
+        .csv(f"file://{in_folder_path}/{in_file_name}.{FILE_TYPE_CSV}") \
         .repartition(in_repartition) \
         .cache()
 
+    l_view_name = fn_get_default_view_name(in_file_name, in_view_name)
     l_df.createTempView(l_view_name)
 
     return l_df
@@ -168,7 +201,7 @@ def fn_run_task(in_tgt_folder: str,
         l_df.explain(extended=False)
 
     if in_tgt_path is not None:
-        l_path = "{}/{}".format(in_tgt_path, in_tgt_folder)
+        l_path = f"{in_tgt_path}/{in_tgt_folder}"
     else:
         l_path = fn_get_task_target_folder(in_task_group_id=in_task_group_id,
                                            in_task_type=l_type,

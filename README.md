@@ -25,9 +25,9 @@ Tasks Description:
 * Task_Description.txt
 
 Inputs:
-* data/accounts.csv
-* data/country_abbreviation.csv
-* data/transactions.csv
+* data/tables/accounts/*.parquet
+* data/tables/country_abbreviation/*.parquet
+* data/tables/transactions/*.parquet
 
 Outputs:
 * data/df/task.../...

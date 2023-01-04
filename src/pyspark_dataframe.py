@@ -372,12 +372,11 @@ def fn_run_test_task(in_task_group_id: int,
     l_expected_view_name = l_view_name + "expected"
 
     # ACT
-    t.fn_create_df_from_csv_file(in_file_name="*",
-                                 in_file_path=l_folder_path,
+    t.fn_create_df_from_csv_file(in_folder_path=l_folder_path,
                                  in_view_name=l_actual_view_name)
     # expect
     l_df_expect = t.fn_create_df_from_csv_file(in_file_name=l_folder_name,
-                                               in_file_path=l_path,
+                                               in_folder_path=l_path,
                                                in_view_name=l_expected_view_name)
 
     l_cols = ",".join(fn_validate_col_list(l_df_expect))
@@ -411,17 +410,17 @@ def fn_run_test_task(in_task_group_id: int,
         raise AssertionError(f"Test has failed for '{l_folder_name}'. Difference found")
 
 
-def fn_df_to_parquet_file(in_df_dict: Dict):
+def fn_df_to_parquet_file(in_df_dict: Dict[str, DataFrame]):
     for l_one_df_name, l_one_df in in_df_dict.items():
-        t.fn_run_task(in_tgt_folder=f"tables/{l_one_df_name}",
+        t.fn_run_task(in_tgt_folder=l_one_df_name + "/*",
                       in_data_frame=l_one_df,
-                      in_tgt_path=t.FOLDER_DATA,
+                      in_tgt_path=t.FOLDER_TABLES,
                       in_output_file_type=t.FILE_TYPE_PARQUET)
 
 
-DF_ACCOUNTS: DataFrame = t.fn_create_df_from_csv_file(in_file_name=t.ACCOUNTS)
-DF_TRANSACTIONS: DataFrame = t.fn_create_df_from_csv_file(in_file_name=t.TRANSACTIONS)
-DF_COUNTRY_ABBR: DataFrame = t.fn_create_df_from_csv_file(in_file_name=t.COUNTRY_ABBREVIATION)
+DF_ACCOUNTS: DataFrame = t.fn_create_df_from_parquet(in_sub_folder=t.ACCOUNTS)
+DF_TRANSACTIONS: DataFrame = t.fn_create_df_from_parquet(in_sub_folder=t.TRANSACTIONS)
+DF_COUNTRY_ABBR: DataFrame = t.fn_create_df_from_parquet(in_sub_folder=t.COUNTRY_ABBREVIATION)
 
 DICT_CORE_DF = {t.ACCOUNTS: DF_ACCOUNTS,
                 t.TRANSACTIONS: DF_TRANSACTIONS,
