@@ -51,7 +51,7 @@ class TaskDf:
     tgt_folder: str
     data_frame: DataFrame
     test_filter_value: str = STR_TRUE
-    sql: str = ""
+    sql : str = None
 
     def __str__(self):
         l_nl = "\n"
@@ -66,16 +66,18 @@ class TaskDf:
 
         return l_str
 
+    def get_sql(self):
+        l_path = fn_get_sql_task_folder_path(self.task_group_id)
+
+        with open(f"{l_path}/{self.tgt_folder}.sql", "r", encoding="UTF-8") as file:
+            return file.read()
+
     def __init__(self, in_task_group_id, in_tgt_folder, in_data_frame, in_test_filter_value=STR_TRUE):
         self.task_group_id = in_task_group_id
         self.tgt_folder = in_tgt_folder
         self.data_frame = in_data_frame
         self.test_filter_value = in_test_filter_value
-
-        l_path = fn_get_sql_task_folder_path(self.task_group_id)
-
-        with open(f"{l_path}/{self.tgt_folder}.sql", "r", encoding="UTF-8") as file:
-            self.sql = file.read()
+        self.sql = self.get_sql()
 
 
 def fn_init_argparse(in_def_task_type) -> argparse.ArgumentParser:
