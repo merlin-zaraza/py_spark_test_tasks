@@ -79,28 +79,39 @@ class TaskDf:
     """
 
     data_frame: DataFrame
-    sql_name: str
-    sql_path: str
+    _sql_path: str
 
     @property
     def test_task(self):
         return self._test_task
 
+    @property
+    def sql_name(self):
+        return self._sql_name
+
+    @sql_name.setter
+    def sql_name(self, value: str):
+        if not value:
+            raise ValueError("Value cannot be null")
+
+        self._sql_name = value
+
+        with open(f"{self._sql_path}/{value}.sql", "r", encoding="UTF-8") as file:
+            self._sql = file.read()
+
     @test_task.setter
     def test_task(self, in_test_task):
-
         self._test_task = in_test_task
-        self.sql_name = DICT_TEST_TASKS_SQL[in_test_task]
-        self.sql_path = fn_get_sql_task_folder_path(self.test_task.group_id)
-
-        with open(f"{self.sql_path}/{self.sql_name}.sql", "r", encoding="UTF-8") as file:
-            self._sql = file.read()
+        self._sql_path = fn_get_sql_task_folder_path(in_test_task.group_id)
 
     @property
     def sql(self):
 
         if not self.test_task:
-            raise ValueError("Property test_task has not been set, cannot get sql query ")
+            raise ValueError("Property test_task has not been set ")
+
+        if not self.sql_name:
+            raise ValueError("Property sql_name has not been set")
 
         return self._sql
 
@@ -119,10 +130,16 @@ class TaskDf:
         return l_str
 
     def __init__(self, in_data_frame: DataFrame,
-                 in_test_task: TestTask = None):
+                 in_test_task: TestTask = None,
+                 in_sql_name: str = None):
+
         self.data_frame = in_data_frame
+
         if in_test_task:
             self.test_task = in_test_task
+
+            if in_sql_name:
+                self.sql_name = in_sql_name
 
 
 def fn_init_argparse(in_def_task_type) -> argparse.ArgumentParser:
@@ -369,7 +386,7 @@ def fn_init(in_init_all_tables: bool = False):
     SPARK_SESSION = SparkSession.builder.appName(_APP_NAME).getOrCreate()
 
     if in_init_all_tables:
-        return fn_init_tables()
+        fn_init_tables()
 
 
 def fn_close_session():

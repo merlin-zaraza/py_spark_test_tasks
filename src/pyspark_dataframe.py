@@ -241,6 +241,7 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDf]]:
 
         for l_task_ind, l_task_df in enumerate(l_task_df_list):
             l_task_df.test_task = TestTask(l_one_task_group_id, l_task_ind + 1)
+            l_task_df.sql_name = t.DICT_TEST_TASKS_SQL[l_task_df.test_task]
 
         l_result.setdefault(l_one_task_group_id, l_task_df_list)
 
