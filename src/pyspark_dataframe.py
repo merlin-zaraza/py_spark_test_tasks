@@ -25,7 +25,7 @@ def fn_get_task_def_list1(in_group_id) -> List[TaskDf]:
 
     return [
         TaskDf(in_group_id, "1.1_account_types_count", l_df_account_types_count),
-        TaskDf(in_group_id, "1.2_account_balance", l_df_account_balance, "id <= 20 "),
+        TaskDf(in_group_id, "1.2_account_balance", l_df_account_balance),
     ]
 
 
@@ -88,14 +88,11 @@ def fn_get_task_def_list2(in_group_id) -> List[TaskDf]:
         .fillna(value=0)
 
     return [
-        TaskDf(in_group_id, "2.1_accounts_btw_18_30", l_df_accounts_btw_18_30,
-               "id in (1,5,6,8,19,30,33,34,35,36,38,42,44,52,55,57,64,72,74,76)"),
-        TaskDf(in_group_id, "2.2_accounts_non_pro", l_l_df_accounts_non_pro_with_user_info, "id <= 20"),
+        TaskDf(in_group_id, "2.1_accounts_btw_18_30", l_df_accounts_btw_18_30),
+        TaskDf(in_group_id, "2.2_accounts_non_pro", l_l_df_accounts_non_pro_with_user_info),
         TaskDf(in_group_id, "2.3_accounts_top_5", l_df_accounts_top5),
-        TaskDf(in_group_id, "2.4_total_per_year", l_df_total_expenses_with_user_info,
-               "id in (351901,64444,42093,456473,372636,457272,170685,153318,288955,452806,"
-               "435985,248093,111744,392651,180469,204816,263364,230316,56785,109722)"),
-        TaskDf(in_group_id, "2.5_total_earnings_pivot", l_df_total_expenses_pivot, "id <= 20"),
+        TaskDf(in_group_id, "2.4_total_per_year", l_df_total_expenses_with_user_info),
+        TaskDf(in_group_id, "2.5_total_earnings_pivot", l_df_total_expenses_pivot),
     ]
 
 
@@ -130,25 +127,13 @@ def fn_get_task_def_list3(in_group_id) -> List[TaskDf]:
         .orderBy(f.col("first_name").desc())
 
     return [
-        TaskDf(in_group_id, "3.1_first_last_concatenated", l_df_first_last_concatenated, """
-           first_last_concat in ('Darcy Phillips','Amelia Wright','Haris Ellis',
-           'Tony Hall','Rubie Stewart','Miley Perry','Marcus Carter','Charlie Harris','Honey Rogers','Luke Harris',
-           'Spike Murphy','Vincent Adams','James Barnes','George Bailey','Sienna Holmes','Isabella Elliott',
-           'Freddie Martin','Kate Wright','Albert Myers','Connie Wells')
-         """),
+        TaskDf(in_group_id, "3.1_first_last_concatenated", l_df_first_last_concatenated),
         TaskDf(in_group_id, "3.2_avg_transaction_amount_2021_per_client",
-               l_df_avg_transaction_amount_2021_per_client,
-               "id in ( 1,2,4,6,7,11,12,13,15,17,19,22,23,24,27,28,30,31,32,33 )"),
+               l_df_avg_transaction_amount_2021_per_client),
         TaskDf(in_group_id, "3.3_account_types_count", l_df_account_types_count),
         TaskDf(in_group_id, "3.4_top_10_positive", l_df_top_10_positive),
         TaskDf(in_group_id, "3.5_clients_sorted_by_first_name_descending",
-               l_df_clients_sorted_by_first_name_descending,
-               "first_name in ('Wilson') and "
-               "last_name  in ('Mitchell','Anderson','Cameron','Gray','Barnes',"
-               "'Williams','Stewart','Elliott','Cole',"
-               "'Tucker','Stewart','Ferguson','Davis','Higgins','Perry','Riley',"
-               "'Edwards','Richards','Myers','Johnson')"
-               ),
+               l_df_clients_sorted_by_first_name_descending),
     ]
 
 
@@ -239,14 +224,9 @@ def fn_get_task_def_list4(in_group_id) -> List[TaskDf]:
     """
     return [
         TaskDf(in_group_id, "4.1_person_with_biggest_balance_in_country",
-               fn_get_richest_person_in_country_broadcast(),
-               "country_full_name in ('Bulgaria','Surinam','Mauritius','Chile','Ethiopia','Peru','Mali',"
-               "'Malawi','Senegal','Spain','Cuba','Belgium','Yemen','Denmark','Belgium','Ecuador',"
-               "'Honduras','Peru','El Salvador','China')"),
-        TaskDf(in_group_id, "4.2_invalid_accounts", fn_get_invalid_accounts(),
-               "account_type = 'Professional' and account_id in (7253) "),
-        TaskDf(in_group_id, "4.3_single_dataset", fn_get_all_info_broadcast(),
-               "id in (1,6,12,13,16,22,26)")
+               fn_get_richest_person_in_country_broadcast()),
+        TaskDf(in_group_id, "4.2_invalid_accounts", fn_get_invalid_accounts()),
+        TaskDf(in_group_id, "4.3_single_dataset", fn_get_all_info_broadcast())
     ]
 
 

@@ -5,7 +5,7 @@ import pathlib
 import argparse
 import os
 import shutil
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 from pyspark.sql import SparkSession, DataFrame, DataFrameWriter
 
@@ -74,11 +74,10 @@ class TaskDf:
         with open(f"{l_path}/{self.tgt_folder}.sql", "r", encoding="UTF-8") as file:
             return file.read()
 
-    def __init__(self, in_task_group_id, in_tgt_folder, in_data_frame, in_test_filter_value=STR_TRUE):
+    def __init__(self, in_task_group_id, in_tgt_folder, in_data_frame):
         self.task_group_id = in_task_group_id
         self.tgt_folder = in_tgt_folder
         self.data_frame = in_data_frame
-        self.test_filter_value = in_test_filter_value
         self.sql = self.get_sql()
 
 
@@ -167,7 +166,7 @@ def fn_init_tables(*args):
     """
     l_result_dict = {}
 
-    if not args :
+    if not args:
         args = LIST_OF_ALL_INPUT_TABLES
 
     for l_one_table in args:
@@ -438,13 +437,15 @@ def fn_run_task_type(in_dict_all_group_tasks: Dict[int, List[TaskDf]],
 def fn_run_test_task(in_task_group_id: int,
                      in_task_id: int,
                      in_dict_all_group_tasks: Dict[int, List[TaskDf]],
-                     in_task_type: str = TASK_TYPE_DF):
+                     in_task_type: str = TASK_TYPE_DF,
+                     in_test_task_filter: Dict[Tuple[int, int], str] = None):
     """Function for test execution, compares input and output
     files In case of difference raise error and shows rows with diff values
     :param in_task_group_id:
     :param in_task_id:
     :param in_dict_all_group_tasks: Dict[int, List[TaskDf]],
     :param in_task_type:
+    :param in_test_task_filter dictionary with filters
     :return: None
 
     """
@@ -473,7 +474,12 @@ def fn_run_test_task(in_task_group_id: int,
                                             in_dict_all_group_tasks=in_dict_all_group_tasks)
 
     l_folder_name = l_task_def.tgt_folder
-    l_src_filter = l_task_def.test_filter_value
+    l_src_filter = STR_TRUE
+
+    if in_test_task_filter:
+        l_key = (in_task_group_id, in_task_id)
+        in_test_task_filter.setdefault(l_key, STR_TRUE)
+        l_src_filter = in_test_task_filter[l_key]
 
     l_folder_path = fn_get_task_target_folder(in_task_type=in_task_type,
                                               in_task_group_id=in_task_group_id,
