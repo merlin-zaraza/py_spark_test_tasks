@@ -40,8 +40,6 @@ services:
     ports:
       - "9091:8080"
       - "7000:7000"
-    depends_on:
-      - spark-master
 
   spark-worker-b:
     <<: *spark-common
@@ -51,8 +49,6 @@ services:
     ports:
       - "9092:8080"
       - "7001:7000"
-    depends_on:
-      - spark-master
 
 #  demo-database:
 #    image: postgres:11.7-alpine
