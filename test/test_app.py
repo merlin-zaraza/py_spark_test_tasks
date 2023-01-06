@@ -1,7 +1,7 @@
 """
 Module for tests of pyspark task using sql and dataframe API
 """
-from typing import Dict, Tuple
+from typing import Dict
 
 import pytest
 import pyspark_dataframe as psd
@@ -10,10 +10,11 @@ import pyspark_sql as pss
 from pyspark_sql import TestTask
 
 l_test_task_types_tuple = "in_task_type", pss.TASK_TYPES_LIST
-l_dict_tasks_tuple = "in_task_group_id,in_task_id", [task for task, sql in pss.DICT_TEST_TASKS_SQL.items()]
+l_dict_tasks_tuple = "in_task_group_id,in_task_id", [ task for task, sql in
+                                                     pss.DICT_TEST_TASKS_SQL.items()]
 
 
-def fn_get_test_task_filter_dict() -> Dict[Tuple[int, int], str]:
+def fn_get_test_task_filter_dict() -> Dict[TestTask, str]:
     l_dict_test_filter = {
         TestTask(1, 2): "id <= 20",
         TestTask(2, 1): "id in (1,5,6,8,19,30,33,34,35,36,38,42,44,52,55,57,64,72,74,76)",
@@ -50,7 +51,8 @@ def fn_get_test_task_filter_dict() -> Dict[Tuple[int, int], str]:
                 'Honduras','Peru','El Salvador','China'
             )
             """,
-        TestTask(4, 2): "account_type = 'Professional' and account_id in (7253) ", (4, 3): "id in (1,6,12,13,16,22,26) "}
+        TestTask(4, 2): "account_type = 'Professional' and account_id in (7253) ",
+        (4, 3): "id in (1,6,12,13,16,22,26) "}
 
     return l_dict_test_filter
 
