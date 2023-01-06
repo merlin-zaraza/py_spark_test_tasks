@@ -35,7 +35,7 @@ def fn_get_sql_name_dict() -> Dict[TestTask, str]:
     return {k: "{}.{}_{}".format(k.group_id, k.task_id, v) for k, v in l_dict_test_sql.items()}
 
 
-TEST_TASKS_DICT = fn_get_sql_name_dict()
+DICT_TEST_TASKS_SQL = fn_get_sql_name_dict()
 _APP_NAME = "py_spark_tasks"
 
 STR_TRUE: str = "true"
@@ -89,7 +89,7 @@ class TaskDf:
     def test_task(self, in_test_task):
 
         self._test_task = in_test_task
-        self.sql_name = TEST_TASKS_DICT[in_test_task]
+        self.sql_name = DICT_TEST_TASKS_SQL[in_test_task]
         self.sql_path = fn_get_sql_task_folder_path(self.test_task.group_id)
 
         with open(f"{self.sql_path}/{self.sql_name}.sql", "r", encoding="UTF-8") as file:
@@ -336,13 +336,17 @@ def fn_run_task_df(in_tgt_folder: str,
                 in_repartition_tgt=in_repartition_tgt)
 
 
-def fn_get_task_group_range(in_task_group_id: int = None):
+def fn_get_task_group_range(in_task_group_id: int = None,
+                            in_dict_all_group_tasks : Dict = None,):
     """
     Function to get list of tasks to run
     By default (in_task_group_id is none) it is all tasks : 1,2,3,4
     Otherwise only one task
     """
-    l_default_range = range(1, 5)
+    if in_dict_all_group_tasks is None:
+        l_default_range = range(1, 5)
+    else:
+        l_default_range = range(1, len(in_dict_all_group_tasks) + 1)
 
     if in_task_group_id is None:
         l_range = l_default_range
@@ -443,7 +447,7 @@ def fn_run_task_type(in_dict_all_group_tasks: Dict[int, List[TaskDf]],
     and put them to the /opt/spark-data/df folder
     """
 
-    l_range = fn_get_task_group_range(in_task_group_id)
+    l_range = fn_get_task_group_range(in_task_group_id, in_dict_all_group_tasks)
 
     if in_task_id is None:
 
