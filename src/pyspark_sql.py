@@ -13,6 +13,8 @@ ACCOUNTS = 'accounts'
 TRANSACTIONS = 'transactions'
 COUNTRY_ABBREVIATION = 'country_abbreviation'
 
+LIST_OF_ALL_INPUT_TABLES = [ACCOUNTS, TRANSACTIONS, COUNTRY_ABBREVIATION]
+
 TASK_TYPE_SQL = "sql"
 TASK_TYPE_DF = "df"
 TASK_TYPES_LIST = [TASK_TYPE_DF, TASK_TYPE_SQL]
@@ -51,7 +53,7 @@ class TaskDf:
     tgt_folder: str
     data_frame: DataFrame
     test_filter_value: str = STR_TRUE
-    sql : str = None
+    sql: str = None
 
     def __str__(self):
         l_nl = "\n"
@@ -163,9 +165,16 @@ def fn_init_tables(*args):
     """
     Function for tables initialisation, register existing csv files as SQL views
     """
+    l_result_dict = {}
 
-    for l_one_file in args:
-        fn_create_df_from_csv_file(in_file_name=l_one_file)
+    if not args :
+        args = LIST_OF_ALL_INPUT_TABLES
+
+    for l_one_table in args:
+        l_result_dict.setdefault(l_one_table,
+                                 fn_create_df_from_parquet(in_sub_folder=l_one_table))
+
+    return l_result_dict
 
 
 def fn_get_task_target_folder(in_task_type: str,
@@ -313,9 +322,7 @@ def fn_init(in_init_all_tables: bool = False):
     SPARK_SESSION = SparkSession.builder.appName(_APP_NAME).getOrCreate()
 
     if in_init_all_tables:
-        fn_init_tables(ACCOUNTS,
-                       TRANSACTIONS,
-                       COUNTRY_ABBREVIATION)
+        return fn_init_tables()
 
 
 def fn_close_session():

@@ -40,52 +40,10 @@ def fn_inner_join_acc_names_to_df(in_dataframe: t.DataFrame) -> t.DataFrame:
         "inner")
 
 
-def fn_get_task_def_list2(in_group_id):
+def fn_get_task_def_list2(in_group_id) -> List[TaskDf]:
     """
     Task 2 Data Frames List
     """
-
-    l_df_accounts_btw_18_30 = DF_ACCOUNTS.selectExpr(
-        "id",
-        "first_name",
-        "last_name",
-        "age",
-        "country"
-    ).where("age between 18 and 30")
-
-    l_df_accounts_non_pro = DF_TRANSACTIONS.selectExpr(
-        "id",
-        "account_type"
-    ).where(f.col("account_type") != 'Professional') \
-        .groupBy("id") \
-        .agg(f.count("id").alias("cnt"))
-
-    l_l_df_accounts_non_pro_with_user_info = fn_inner_join_acc_names_to_df(l_df_accounts_non_pro)
-
-    l_df_accounts_top5 = DF_ACCOUNTS \
-        .groupBy("first_name") \
-        .agg(f.count("first_name").alias("cnt")) \
-        .orderBy(f.col("cnt").desc()) \
-        .limit(5)
-
-    l_df_total_expenses = DF_TRANSACTIONS.selectExpr(
-        "id",
-        " case when amount < 0 then amount else 0 end as expenses",
-        " case when amount > 0 then amount else 0 end as earnings "
-    ).groupBy("id") \
-        .agg(f.round(f.abs(f.sum("expenses")), t.ROUND_DIGITS).alias("expenses"),
-             f.round(f.sum("earnings"), t.ROUND_DIGITS).alias("earnings"))
-
-    l_df_total_expenses_with_user_info = fn_inner_join_acc_names_to_df(l_df_total_expenses)
-
-    l_df_total_expenses_pivot = DF_TRANSACTIONS.selectExpr(
-        "id",
-        "case when amount > 0 then amount else 0 end as earnings",
-        "int(substring(transaction_date, 1, 4)) as tr_year",
-    ).groupBy("id") \
-        .pivot("tr_year") \
-        .agg(f.round(f.sum("earnings").alias("earnings"), t.ROUND_DIGITS)) \
-        .fillna(value=0)
 
     return [
         TaskDf(in_group_id, "2.1_accounts_btw_18_30", l_df_accounts_btw_18_30,
@@ -263,9 +221,11 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDf]]:
     return l_result
 
 
-DF_ACCOUNTS: DataFrame = t.fn_create_df_from_parquet(in_sub_folder=t.ACCOUNTS)
-DF_TRANSACTIONS: DataFrame = t.fn_create_df_from_parquet(in_sub_folder=t.TRANSACTIONS)
-DF_COUNTRY_ABBR: DataFrame = t.fn_create_df_from_parquet(in_sub_folder=t.COUNTRY_ABBREVIATION)
+l_all_df_dict = t.fn_init_tables()
+
+DF_ACCOUNTS: DataFrame = l_all_df_dict[t.ACCOUNTS]
+DF_TRANSACTIONS: DataFrame = l_all_df_dict[t.TRANSACTIONS]
+DF_COUNTRY_ABBR: DataFrame = l_all_df_dict[t.COUNTRY_ABBREVIATION]
 
 DICT_ALL_GROUP_TASKS = fn_get_dict_with_all_tasks()
 
