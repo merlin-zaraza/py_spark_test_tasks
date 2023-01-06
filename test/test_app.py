@@ -8,14 +8,7 @@ import pyspark_dataframe as psd
 import pyspark_sql as pss
 
 l_test_task_types_tuple = "in_task_type", pss.TASK_TYPES_LIST
-l_dict_tasks_tuple = "in_task_group_id,in_task_id", [
-    (1, 1), (1, 2),
-    (2, 1), (2, 2), (2, 3),
-    (2, 4),
-    (2, 5),
-    (3, 1), (3, 2), (3, 3), (3, 4), (3, 5),
-    (4, 1), (4, 2), (4, 3)
-]
+l_dict_tasks_tuple = "in_task_group_id,in_task_id", [task for task, sql in pss.DICT_TEST_TASKS_SQL.items()]
 
 
 def fn_get_test_task_filter_dict() -> Dict[Tuple[int, int], str]:
