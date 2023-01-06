@@ -6,10 +6,10 @@ from typing import Dict, List
 from pyspark.sql import functions as f, DataFrame
 
 import pyspark_sql as t
-from pyspark_sql import TaskDf
+from pyspark_sql import TaskDf, TestTask
 
 
-def fn_get_task_def_list1(in_group_id) -> List[TaskDf]:
+def fn_get_task_def_list1() -> List[TaskDf]:
     """
     Task 1 Data Frames List
     """
@@ -24,8 +24,8 @@ def fn_get_task_def_list1(in_group_id) -> List[TaskDf]:
              f.max("transaction_date").alias("latest_date"))
 
     return [
-        TaskDf(in_group_id, "1.1_account_types_count", l_df_account_types_count),
-        TaskDf(in_group_id, "1.2_account_balance", l_df_account_balance),
+        TaskDf(l_df_account_types_count),
+        TaskDf(l_df_account_balance),
     ]
 
 
@@ -40,7 +40,7 @@ def fn_inner_join_acc_names_to_df(in_dataframe: t.DataFrame) -> t.DataFrame:
         "inner")
 
 
-def fn_get_task_def_list2(in_group_id) -> List[TaskDf]:
+def fn_get_task_def_list2() -> List[TaskDf]:
     """
     Task 2 Data Frames List
     """
@@ -88,15 +88,15 @@ def fn_get_task_def_list2(in_group_id) -> List[TaskDf]:
         .fillna(value=0)
 
     return [
-        TaskDf(in_group_id, "2.1_accounts_btw_18_30", l_df_accounts_btw_18_30),
-        TaskDf(in_group_id, "2.2_accounts_non_pro", l_l_df_accounts_non_pro_with_user_info),
-        TaskDf(in_group_id, "2.3_accounts_top_5", l_df_accounts_top5),
-        TaskDf(in_group_id, "2.4_total_per_year", l_df_total_expenses_with_user_info),
-        TaskDf(in_group_id, "2.5_total_earnings_pivot", l_df_total_expenses_pivot),
+        TaskDf(l_df_accounts_btw_18_30),
+        TaskDf(l_l_df_accounts_non_pro_with_user_info),
+        TaskDf(l_df_accounts_top5),
+        TaskDf(l_df_total_expenses_with_user_info),
+        TaskDf(l_df_total_expenses_pivot),
     ]
 
 
-def fn_get_task_def_list3(in_group_id) -> List[TaskDf]:
+def fn_get_task_def_list3() -> List[TaskDf]:
     """
     Task 3 Data Frames List
     """
@@ -127,13 +127,11 @@ def fn_get_task_def_list3(in_group_id) -> List[TaskDf]:
         .orderBy(f.col("first_name").desc())
 
     return [
-        TaskDf(in_group_id, "3.1_first_last_concatenated", l_df_first_last_concatenated),
-        TaskDf(in_group_id, "3.2_avg_transaction_amount_2021_per_client",
-               l_df_avg_transaction_amount_2021_per_client),
-        TaskDf(in_group_id, "3.3_account_types_count", l_df_account_types_count),
-        TaskDf(in_group_id, "3.4_top_10_positive", l_df_top_10_positive),
-        TaskDf(in_group_id, "3.5_clients_sorted_by_first_name_descending",
-               l_df_clients_sorted_by_first_name_descending),
+        TaskDf(l_df_first_last_concatenated),
+        TaskDf(l_df_avg_transaction_amount_2021_per_client),
+        TaskDf(l_df_account_types_count),
+        TaskDf(l_df_top_10_positive),
+        TaskDf(l_df_clients_sorted_by_first_name_descending),
     ]
 
 
@@ -218,15 +216,15 @@ def fn_get_all_info_broadcast():
     return l_df_all_info
 
 
-def fn_get_task_def_list4(in_group_id) -> List[TaskDf]:
+def fn_get_task_def_list4() -> List[TaskDf]:
     """
     Task 4 Data Frames List
     """
+
     return [
-        TaskDf(in_group_id, "4.1_person_with_biggest_balance_in_country",
-               fn_get_richest_person_in_country_broadcast()),
-        TaskDf(in_group_id, "4.2_invalid_accounts", fn_get_invalid_accounts()),
-        TaskDf(in_group_id, "4.3_single_dataset", fn_get_all_info_broadcast())
+        TaskDf(fn_get_richest_person_in_country_broadcast()),
+        TaskDf(fn_get_invalid_accounts()),
+        TaskDf(fn_get_all_info_broadcast())
     ]
 
 
@@ -236,9 +234,15 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDf]]:
     """
     l_result = {}
 
-    for l_one_task_id in t.fn_get_task_group_range():
-        fn_get_task_def_list = getattr(sys.modules[__name__], f'fn_get_task_def_list{l_one_task_id}')
-        l_result.setdefault(l_one_task_id, fn_get_task_def_list(l_one_task_id))
+    for l_one_task_group_id in t.fn_get_task_group_range():
+        fn_get_task_def_list = getattr(sys.modules[__name__], f'fn_get_task_def_list{l_one_task_group_id}')
+
+        l_task_df_list: List[TaskDf] = fn_get_task_def_list()
+
+        for l_task_ind, l_task_df in enumerate(l_task_df_list):
+            l_task_df.test_task = TestTask(l_one_task_group_id, l_task_ind + 1)
+
+        l_result.setdefault(l_one_task_group_id, l_task_df_list)
 
     return l_result
 

@@ -6,19 +6,36 @@ import argparse
 import os
 import shutil
 from typing import List, Dict, Tuple
+from collections import namedtuple
 
 from pyspark.sql import SparkSession, DataFrame, DataFrameWriter
 
-ACCOUNTS = 'accounts'
-TRANSACTIONS = 'transactions'
-COUNTRY_ABBREVIATION = 'country_abbreviation'
+TestTask = namedtuple("TestTask", "group_id task_id")
 
-LIST_OF_ALL_INPUT_TABLES = [ACCOUNTS, TRANSACTIONS, COUNTRY_ABBREVIATION]
 
-TASK_TYPE_SQL = "sql"
-TASK_TYPE_DF = "df"
-TASK_TYPES_LIST = [TASK_TYPE_DF, TASK_TYPE_SQL]
+def fn_get_sql_name_dict() -> Dict[TestTask, str]:
+    l_dict_test_sql = {
+        TestTask(1, 1): "account_types_count",
+        TestTask(1, 2): "account_balance",
+        TestTask(2, 1): "accounts_btw_18_30",
+        TestTask(2, 2): "accounts_non_pro",
+        TestTask(2, 3): "accounts_top_5",
+        TestTask(2, 4): "total_per_year",
+        TestTask(2, 5): "total_earnings_pivot",
+        TestTask(3, 1): "first_last_concatenated",
+        TestTask(3, 2): "avg_transaction_amount_2021_per_client",
+        TestTask(3, 3): "account_types_count",
+        TestTask(3, 4): "top_10_positive",
+        TestTask(3, 5): "clients_sorted_by_first_name_descending",
+        TestTask(4, 1): "person_with_biggest_balance_in_country",
+        TestTask(4, 2): "invalid_accounts",
+        TestTask(4, 3): "single_dataset",
+    }
 
+    return {k: "{}.{}_{}".format(k.group_id, k.task_id, v) for k, v in l_dict_test_sql.items()}
+
+
+TEST_TASKS_DICT = fn_get_sql_name_dict()
 _APP_NAME = "py_spark_tasks"
 
 STR_TRUE: str = "true"
@@ -31,6 +48,16 @@ ROUND_DIGITS: int = 2
 
 FILE_TYPE_CSV: str = "csv"
 FILE_TYPE_PARQUET: str = "parquet"
+
+ACCOUNTS = 'accounts'
+TRANSACTIONS = 'transactions'
+COUNTRY_ABBREVIATION = 'country_abbreviation'
+
+LIST_OF_ALL_INPUT_TABLES = [ACCOUNTS, TRANSACTIONS, COUNTRY_ABBREVIATION]
+
+TASK_TYPE_SQL = "sql"
+TASK_TYPE_DF = "df"
+TASK_TYPES_LIST = [TASK_TYPE_DF, TASK_TYPE_SQL]
 
 _DF_PARTITIONS_COUNT: int = 20
 _SEPARATOR: str = ";"
@@ -49,36 +76,52 @@ class TaskDf:
     """
     Class for task dataframe definition
     """
-    task_group_id: int
-    tgt_folder: str
+
     data_frame: DataFrame
-    test_filter_value: str = STR_TRUE
-    sql: str = None
+    sql_name: str
+    sql_path: str
+
+    @property
+    def test_task(self):
+        return self._test_task
+
+    @test_task.setter
+    def test_task(self, in_test_task):
+
+        self._test_task = in_test_task
+        self.sql_name = TEST_TASKS_DICT[in_test_task]
+        self.sql_path = fn_get_sql_task_folder_path(self.test_task.group_id)
+
+        with open(f"{self.sql_path}/{self.sql_name}.sql", "r", encoding="UTF-8") as file:
+            self._sql = file.read()
+
+    @property
+    def sql(self):
+
+        if not self.test_task:
+            raise ValueError("Property test_task has not been set, cannot get sql query ")
+
+        return self._sql
 
     def __str__(self):
-        l_nl = "\n"
-        l_str = "**************************" + l_nl
-        l_str += f" task_group_id : {self.task_group_id} " + l_nl
-        l_str += f" tgt_folder : {self.tgt_folder} " + l_nl
-        l_str += f" test_filter_value : {self.test_filter_value} " + l_nl
-        l_str += "**************************" + l_nl
-        l_str += f" data_frame : {self.data_frame} " + l_nl
-        l_str += f" sql : {self.sql} " + l_nl
-        l_str += "**************************" + l_nl
+        l_str = ""
+
+        for l_line in "**************************" \
+                      f" task_group_id : {self.test_task.group_id} " \
+                      f" task_id : {self.test_task.task_id} " \
+                      "**************************" \
+                      f" data_frame : {self.data_frame} " \
+                      f" sql : {self.sql} " \
+                      "**************************":
+            l_str += l_line + "\n"
 
         return l_str
 
-    def get_sql(self):
-        l_path = fn_get_sql_task_folder_path(self.task_group_id)
-
-        with open(f"{l_path}/{self.tgt_folder}.sql", "r", encoding="UTF-8") as file:
-            return file.read()
-
-    def __init__(self, in_task_group_id, in_tgt_folder, in_data_frame):
-        self.task_group_id = in_task_group_id
-        self.tgt_folder = in_tgt_folder
+    def __init__(self, in_data_frame: DataFrame,
+                 in_test_task: TestTask = None):
         self.data_frame = in_data_frame
-        self.sql = self.get_sql()
+        if in_test_task:
+            self.test_task = in_test_task
 
 
 def fn_init_argparse(in_def_task_type) -> argparse.ArgumentParser:
@@ -256,12 +299,12 @@ def fn_run_tasks_by_definition_list(in_task_group_id: int,
 
         if in_task_type == TASK_TYPE_DF:
             fn_run_task_df(in_task_group_id=in_task_group_id,
-                           in_tgt_folder=l_one_task_df.tgt_folder,
+                           in_tgt_folder=l_one_task_df.sql_name,
                            in_data_frame=l_one_task_df.data_frame,
                            in_repartition_tgt=in_repartition_tgt)
         elif in_task_type == TASK_TYPE_SQL:
             fn_run_task_sql(in_task_group_id=in_task_group_id,
-                            in_tgt_folder=l_one_task_df.tgt_folder,
+                            in_tgt_folder=l_one_task_df.sql_name,
                             in_sql=l_one_task_df.sql,
                             in_repartition_tgt=in_repartition_tgt)
 
@@ -473,7 +516,7 @@ def fn_run_test_task(in_task_group_id: int,
                                             in_task_id=in_task_id,
                                             in_dict_all_group_tasks=in_dict_all_group_tasks)
 
-    l_folder_name = l_task_def.tgt_folder
+    l_folder_name = l_task_def.sql_name
     l_src_filter = STR_TRUE
 
     if in_test_task_filter:
