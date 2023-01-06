@@ -9,7 +9,7 @@ import pyspark_sql as t
 from pyspark_sql import TaskDf
 
 
-def fn_get_task_def_list1(in_group_id):
+def fn_get_task_def_list1(in_group_id) -> List[TaskDf]:
     """
     Task 1 Data Frames List
     """
@@ -45,6 +45,48 @@ def fn_get_task_def_list2(in_group_id) -> List[TaskDf]:
     Task 2 Data Frames List
     """
 
+    l_df_accounts_btw_18_30 = DF_ACCOUNTS.selectExpr(
+        "id",
+        "first_name",
+        "last_name",
+        "age",
+        "country"
+    ).where("age between 18 and 30")
+
+    l_df_accounts_non_pro = DF_TRANSACTIONS.selectExpr(
+        "id",
+        "account_type"
+    ).where(f.col("account_type") != 'Professional') \
+        .groupBy("id") \
+        .agg(f.count("id").alias("cnt"))
+
+    l_l_df_accounts_non_pro_with_user_info = fn_inner_join_acc_names_to_df(l_df_accounts_non_pro)
+
+    l_df_accounts_top5 = DF_ACCOUNTS \
+        .groupBy("first_name") \
+        .agg(f.count("first_name").alias("cnt")) \
+        .orderBy(f.col("cnt").desc()) \
+        .limit(5)
+
+    l_df_total_expenses = DF_TRANSACTIONS.selectExpr(
+        "id",
+        " case when amount < 0 then amount else 0 end as expenses",
+        " case when amount > 0 then amount else 0 end as earnings "
+    ).groupBy("id") \
+        .agg(f.round(f.abs(f.sum("expenses")), t.ROUND_DIGITS).alias("expenses"),
+             f.round(f.sum("earnings"), t.ROUND_DIGITS).alias("earnings"))
+
+    l_df_total_expenses_with_user_info = fn_inner_join_acc_names_to_df(l_df_total_expenses)
+
+    l_df_total_expenses_pivot = DF_TRANSACTIONS.selectExpr(
+        "id",
+        "case when amount > 0 then amount else 0 end as earnings",
+        "int(substring(transaction_date, 1, 4)) as tr_year",
+    ).groupBy("id") \
+        .pivot("tr_year") \
+        .agg(f.round(f.sum("earnings").alias("earnings"), t.ROUND_DIGITS)) \
+        .fillna(value=0)
+
     return [
         TaskDf(in_group_id, "2.1_accounts_btw_18_30", l_df_accounts_btw_18_30,
                "id in (1,5,6,8,19,30,33,34,35,36,38,42,44,52,55,57,64,72,74,76)"),
@@ -57,7 +99,7 @@ def fn_get_task_def_list2(in_group_id) -> List[TaskDf]:
     ]
 
 
-def fn_get_task_def_list3(in_group_id):
+def fn_get_task_def_list3(in_group_id) -> List[TaskDf]:
     """
     Task 3 Data Frames List
     """
@@ -191,7 +233,7 @@ def fn_get_all_info_broadcast():
     return l_df_all_info
 
 
-def fn_get_task_def_list4(in_group_id):
+def fn_get_task_def_list4(in_group_id) -> List[TaskDf]:
     """
     Task 4 Data Frames List
     """
