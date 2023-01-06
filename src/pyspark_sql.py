@@ -4,6 +4,7 @@ Package for running direct sql on files
 import pathlib
 import argparse
 import os
+import re
 import shutil
 from typing import List, Dict, Tuple
 from collections import namedtuple
@@ -337,7 +338,7 @@ def fn_run_task_df(in_tgt_folder: str,
 
 
 def fn_get_task_group_range(in_task_group_id: int = None,
-                            in_dict_all_group_tasks : Dict = None,):
+                            in_dict_all_group_tasks: Dict = None, ):
     """
     Function to get list of tasks to run
     By default (in_task_group_id is none) it is all tasks : 1,2,3,4
@@ -500,12 +501,15 @@ def fn_run_test_task(in_task_group_id: int,
     def fn_validate_col_list(in_df: DataFrame):
         l_validated_cols_list = []
 
+        # valid column name should start from letter and consists from numbers, letters and underscore
+        # from the beginning to the end
+        l_valid_column_name_reg_exp = '^[a-z]+([0-9_a-z]+)?$'
+
         for l_one_col in in_df.columns:
-            try:
-                int(l_one_col)
-                l_valid_col = f"`{l_one_col}`"
-            except ValueError:
+            if re.match(l_valid_column_name_reg_exp, l_one_col, flags=re.IGNORECASE):
                 l_valid_col = l_one_col
+            else:
+                l_valid_col = f"`{l_one_col}`"
 
             l_validated_cols_list.append(l_valid_col)
 
