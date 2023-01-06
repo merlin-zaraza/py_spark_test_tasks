@@ -524,7 +524,7 @@ def fn_run_test_task(in_task_group_id: int,
     l_src_filter = STR_TRUE
 
     if in_test_task_filter:
-        l_key = (in_task_group_id, in_task_id)
+        l_key = TestTask(in_task_group_id, in_task_id)
         in_test_task_filter.setdefault(l_key, STR_TRUE)
         l_src_filter = in_test_task_filter[l_key]
 
