@@ -12,31 +12,6 @@ from collections import namedtuple
 from pyspark.sql import SparkSession, DataFrame, DataFrameWriter
 
 TestTask = namedtuple("TestTask", "group_id task_id")
-
-
-def fn_get_sql_name_dict() -> Dict[TestTask, str]:
-    l_dict_test_sql = {
-        TestTask(1, 1): "account_types_count",
-        TestTask(1, 2): "account_balance",
-        TestTask(2, 1): "accounts_btw_18_30",
-        TestTask(2, 2): "accounts_non_pro",
-        TestTask(2, 3): "accounts_top_5",
-        TestTask(2, 4): "total_per_year",
-        TestTask(2, 5): "total_earnings_pivot",
-        TestTask(3, 1): "first_last_concatenated",
-        TestTask(3, 2): "avg_transaction_amount_2021_per_client",
-        TestTask(3, 3): "account_types_count",
-        TestTask(3, 4): "top_10_positive",
-        TestTask(3, 5): "clients_sorted_by_first_name_descending",
-        TestTask(4, 1): "person_with_biggest_balance_in_country",
-        TestTask(4, 2): "invalid_accounts",
-        TestTask(4, 3): "single_dataset",
-    }
-
-    return {k: "{}.{}_{}".format(k.group_id, k.task_id, v) for k, v in l_dict_test_sql.items()}
-
-
-DICT_TEST_TASKS_SQL = fn_get_sql_name_dict()
 _APP_NAME = "py_spark_tasks"
 
 STR_TRUE: str = "true"
@@ -73,73 +48,95 @@ def fn_get_sql_task_folder_path(in_task_group_id: int) -> str:
     return f"{FOLDER_APPS}/sql/task{in_task_group_id}"
 
 
-class TaskDf:
+class TaskDef:
     """
     Class for task dataframe definition
     """
 
-    data_frame: DataFrame
-    _sql_path: str
+    sql: str
 
     @property
-    def test_task(self):
-        return self._test_task
+    def sql_ext(self):
+        """
+        sql extension in read only mode
+        """
+        return ".sql"
+
+    _sql_name: str
+    _sql_name_no_ext: str
+
+    @property
+    def sql_name_no_ext(self):
+        """
+        sql name without extension, required for target output folder
+        """
+        return self._sql_name_no_ext
 
     @property
     def sql_name(self):
+        """
+        Sql file name with .sql
+        """
         return self._sql_name
 
     @sql_name.setter
-    def sql_name(self, value: str):
-        if not value:
-            raise ValueError("Value cannot be null")
-
-        self._sql_name = value
-
-        with open(f"{self._sql_path}/{value}.sql", "r", encoding="UTF-8") as file:
-            self._sql = file.read()
-
-    @test_task.setter
-    def test_task(self, in_test_task):
-        self._test_task = in_test_task
-        self._sql_path = fn_get_sql_task_folder_path(in_test_task.group_id)
+    def sql_name(self, val: str):
+        """
+        Setter for sql_name, set _sql_name_no_ext at the same time
+        """
+        self._sql_name = val
+        self._sql_name_no_ext = val.replace(self.sql_ext, "")
 
     @property
-    def sql(self):
+    def sql_path(self):
+        """
+        Getter for sql file path
+        """
+        return self._sql_path
 
-        if not self.test_task:
-            raise ValueError("Property test_task has not been set ")
+    @sql_path.setter
+    def sql_path(self, val):
+        """
+        Setter for sql file path
+        """
+        if not val:
+            self.sql = ""
+            self.sql_name = ""
+            self._sql_path = ""
+        else:
+            if self.sql_ext not in val:
+                val += self.sql_ext
 
-        if not self.sql_name:
-            raise ValueError("Property sql_name has not been set")
+            self._sql_path = val
+            self.sql_name = os.path.basename(val)
 
-        return self._sql
+            with open(f"{val}", "r", encoding="UTF-8") as file:
+                self.sql = file.read()
 
     def __str__(self):
         l_str = ""
 
-        for l_line in "**************************" \
-                      f" task_group_id : {self.test_task.group_id} " \
-                      f" task_id : {self.test_task.task_id} " \
-                      "**************************" \
-                      f" data_frame : {self.data_frame} " \
-                      f" sql : {self.sql} " \
-                      "**************************":
+        for l_line in ["**************************",
+                       f" task_group_id : {self.test_task.group_id} ",
+                       f" task_id : {self.test_task.task_id} ",
+                       "**************************",
+                       f" data_frame : {self.data_frame} ",
+                       f" sql_path : {self.sql_path} ",
+                       f" sql_name : {self.sql_name} ",
+                       f" sql_ext : {self.sql_ext} ",
+                       f" sql : {self.sql} ",
+                       "**************************"]:
             l_str += l_line + "\n"
 
         return l_str
 
     def __init__(self, in_data_frame: DataFrame,
-                 in_test_task: TestTask = None,
-                 in_sql_name: str = None):
+                 in_sql_path: str = None,
+                 in_test_task: TestTask = None):
 
         self.data_frame = in_data_frame
-
-        if in_test_task:
-            self.test_task = in_test_task
-
-            if in_sql_name:
-                self.sql_name = in_sql_name
+        self.test_task = in_test_task
+        self.sql_path = in_sql_path
 
 
 def fn_init_argparse(in_def_task_type) -> argparse.ArgumentParser:
@@ -306,7 +303,7 @@ def fn_run_task(in_tgt_folder: str,
 
 
 def fn_run_tasks_by_definition_list(in_task_group_id: int,
-                                    in_task_definition_list: List[TaskDf],
+                                    in_task_definition_list: List[TaskDef],
                                     in_task_type: str,
                                     in_repartition_tgt: int = 1):
     """
@@ -317,12 +314,12 @@ def fn_run_tasks_by_definition_list(in_task_group_id: int,
 
         if in_task_type == TASK_TYPE_DF:
             fn_run_task_df(in_task_group_id=in_task_group_id,
-                           in_tgt_folder=l_one_task_df.sql_name,
+                           in_tgt_folder=l_one_task_df.sql_name_no_ext,
                            in_data_frame=l_one_task_df.data_frame,
                            in_repartition_tgt=in_repartition_tgt)
         elif in_task_type == TASK_TYPE_SQL:
             fn_run_task_sql(in_task_group_id=in_task_group_id,
-                            in_tgt_folder=l_one_task_df.sql_name,
+                            in_tgt_folder=l_one_task_df.sql_name_no_ext,
                             in_sql=l_one_task_df.sql,
                             in_repartition_tgt=in_repartition_tgt)
 
@@ -430,7 +427,7 @@ def fn_run_task_group_sql(in_task_group_id: int):
         for l_items in l_dir.iterdir():
             # checking if it's a file
             if l_items.is_file():
-                l_sql_file_name = l_items.name.replace(".sql", "")
+                l_sql_file_name = l_items.name.removesuffix(TaskDef.sql_ext)
 
                 with l_items.open(mode="r") as l_sql_file:
                     l_sql_file_content = l_sql_file.read()
@@ -445,7 +442,7 @@ def fn_run_task_group_sql(in_task_group_id: int):
 
 def fn_get_one_task_definition(in_task_group_id: int,
                                in_task_id: int,
-                               in_dict_all_group_tasks: Dict[int, List[TaskDf]]) -> TaskDf:
+                               in_dict_all_group_tasks: Dict[int, List[TaskDef]]) -> TaskDef:
     """
     Get task definition by id (starting from 1 not 0)
     :param in_task_group_id:
@@ -456,7 +453,7 @@ def fn_get_one_task_definition(in_task_group_id: int,
     return in_dict_all_group_tasks[in_task_group_id][in_task_id - 1]
 
 
-def fn_run_task_type(in_dict_all_group_tasks: Dict[int, List[TaskDf]],
+def fn_run_task_type(in_dict_all_group_tasks: Dict[int, List[TaskDef]],
                      in_task_group_id: int = None,
                      in_task_id: int = None,
                      in_task_type: str = TASK_TYPE_DF):
@@ -492,8 +489,6 @@ def fn_run_task_type(in_dict_all_group_tasks: Dict[int, List[TaskDf]],
                                                                in_dict_all_group_tasks=in_dict_all_group_tasks)
             l_one_task_definition_list.append(l_one_task_definition)
 
-        # print(l_one_task_group, l_one_task_definition_list)
-
         fn_run_tasks_by_definition_list(in_task_group_id=l_one_task_group,
                                         in_task_definition_list=l_one_task_definition_list,
                                         in_task_type=in_task_type)
@@ -501,14 +496,14 @@ def fn_run_task_type(in_dict_all_group_tasks: Dict[int, List[TaskDf]],
 
 def fn_run_test_task(in_task_group_id: int,
                      in_task_id: int,
-                     in_dict_all_group_tasks: Dict[int, List[TaskDf]],
+                     in_dict_all_group_tasks: Dict[int, List[TaskDef]],
                      in_task_type: str = TASK_TYPE_DF,
                      in_test_task_filter: Dict[Tuple[int, int], str] = None):
     """Function for test execution, compares input and output
     files In case of difference raise error and shows rows with diff values
     :param in_task_group_id:
     :param in_task_id:
-    :param in_dict_all_group_tasks: Dict[int, List[TaskDf]],
+    :param in_dict_all_group_tasks: Dict[int, List[TaskDef]],
     :param in_task_type:
     :param in_test_task_filter dictionary with filters
     :return: None
@@ -541,7 +536,7 @@ def fn_run_test_task(in_task_group_id: int,
                                             in_task_id=in_task_id,
                                             in_dict_all_group_tasks=in_dict_all_group_tasks)
 
-    l_folder_name = l_task_def.sql_name
+    l_folder_name = l_task_def.sql_name_no_ext
     l_src_filter = STR_TRUE
 
     if in_test_task_filter:

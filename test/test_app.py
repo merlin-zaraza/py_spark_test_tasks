@@ -4,17 +4,24 @@ Module for tests of pyspark task using sql and dataframe API
 from typing import Dict
 
 import pytest
-import pyspark_dataframe as psd
-import pyspark_sql as pss
+import pyspark_task as t
+import pyspark_task_validator as tv
 
-from pyspark_sql import TestTask
+from pyspark_task_validator import TestTask
 
-l_test_task_types_tuple = "in_task_type", pss.TASK_TYPES_LIST
-l_dict_tasks_tuple = "in_task_group_id,in_task_id", [ task for task, sql in
-                                                     pss.DICT_TEST_TASKS_SQL.items()]
+l_test_task_types_tuple = "in_task_type", tv.TASK_TYPES_LIST
+l_dict_tasks_tuple = "in_task_group_id,in_task_id", [
+    task for task, sql in t.DICT_TEST_TASKS_SQL.items()
+    # (1,1)
+]
 
 
 def fn_get_test_task_filter_dict() -> Dict[TestTask, str]:
+    """
+    Returns dictionary with filter on task output
+    It is required to reduce size of file for expected output
+    :return:
+    """
     l_dict_test_filter = {
         TestTask(1, 2): "id <= 20",
         TestTask(2, 1): "id in (1,5,6,8,19,30,33,34,35,36,38,42,44,52,55,57,64,72,74,76)",
@@ -75,10 +82,10 @@ def test_task_group_invalid_parameters(in_task_group_id, in_task_id, in_task_typ
     :param in_task_type:
     :return:
     """
-    pss.fn_run_task_type(in_task_group_id=in_task_group_id,
-                         in_task_id=in_task_id,
-                         in_task_type=in_task_type,
-                         in_dict_all_group_tasks=psd.DICT_ALL_GROUP_TASKS)
+    tv.fn_run_task_type(in_task_group_id=in_task_group_id,
+                        in_task_id=in_task_id,
+                        in_task_type=in_task_type,
+                        in_dict_all_group_tasks=t.DICT_ALL_GROUP_TASKS)
 
 
 @pytest.mark.spark
@@ -92,8 +99,8 @@ def test_task_data(in_task_group_id, in_task_id, in_task_type):
     :param in_task_type:
     :return:
     """
-    pss.fn_run_test_task(in_task_group_id=in_task_group_id,
-                         in_task_id=in_task_id,
-                         in_task_type=in_task_type,
-                         in_dict_all_group_tasks=psd.DICT_ALL_GROUP_TASKS,
-                         in_test_task_filter=DICT_TEST_TASK_FILTERS)
+    tv.fn_run_test_task(in_task_group_id=in_task_group_id,
+                        in_task_id=in_task_id,
+                        in_task_type=in_task_type,
+                        in_dict_all_group_tasks=t.DICT_ALL_GROUP_TASKS,
+                        in_test_task_filter=DICT_TEST_TASK_FILTERS)
