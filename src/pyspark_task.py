@@ -24,6 +24,7 @@ _l_dict_test_sql = {
     TestTask(4, 1): "person_with_biggest_balance_in_country",
     TestTask(4, 2): "invalid_accounts",
     TestTask(4, 3): "single_dataset",
+    TestTask(5, 1): "account_types_count",
 }
 
 DICT_TEST_TASKS_SQL = {k: "{}.{}_{}".format(k.group_id, k.task_id, v) for k, v in _l_dict_test_sql.items()}
@@ -249,13 +250,27 @@ def fn_get_task_def_list4() -> List[TaskDef]:
     ]
 
 
+def fn_get_task_def_list5() -> List[TaskDef]:
+    """
+    Task 5 Data Frames List
+    """
+
+    l_df_account_types_count = DF_TRANSACTIONS \
+        .groupBy("account_type") \
+        .agg(f.count("id").alias("cnt"))
+
+    return [
+        TaskDef(l_df_account_types_count),
+    ]
+
+
 def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDef]]:
     """
     Returns Dictionary with all task groups inside
     """
     l_result = {}
 
-    for l_one_task_group_id in tv.fn_get_task_group_range():
+    for l_one_task_group_id in {k.group_id for k, v in DICT_TEST_TASKS_SQL.items()}:
         fn_get_task_def_list = getattr(sys.modules[__name__], f'{TEST_TASK_FUNCTION_NAME}{l_one_task_group_id}')
 
         l_task_df_list: List[TaskDef] = fn_get_task_def_list()

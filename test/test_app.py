@@ -11,8 +11,9 @@ from pyspark_task_validator import TestTask, TASK_TYPES_LIST
 
 l_test_task_types_tuple = "in_task_type", TASK_TYPES_LIST
 l_dict_tasks_tuple = "in_task_group_id,in_task_id", [
-    task for task, sql in t.DICT_TEST_TASKS_SQL.items()
-    # (1, 1), (2, 5)
+    task for task, sql in t.DICT_TEST_TASKS_SQL.items() if task.group_id <= 4
+    # (1, 1),
+    # (2, 5)
 ]
 
 
@@ -84,12 +85,13 @@ DICT_TEST_TASK_FILTERS = fn_get_test_task_filter_dict()
 @pytest.mark.parametrize("in_task_group_id,in_task_id",
                          [
                              pytest.param(1, 3, marks=pytest.mark.xfail),
-                             pytest.param(10, 3, marks=pytest.mark.xfail)
+                             pytest.param(10, 3, marks=pytest.mark.xfail),
+                             pytest.param(5, 1, marks=pytest.mark.xfail)
                          ])
 @pytest.mark.parametrize(*l_test_task_types_tuple)
 def test_task_group_invalid_parameters(in_task_group_id, in_task_id, in_task_type):
     """
-    Testing invalid parameters input
+    Testing invalid parameters input and test failure if difference found
     :param in_task_group_id:
     :param in_task_id:
     :param in_task_type:
