@@ -7,13 +7,26 @@ import pytest
 import pyspark_task as t
 import pyspark_task_validator as tv
 
-from pyspark_task_validator import TestTask
+from pyspark_task_validator import TestTask, TASK_TYPES_LIST
 
-l_test_task_types_tuple = "in_task_type", tv.TASK_TYPES_LIST
+l_test_task_types_tuple = "in_task_type", TASK_TYPES_LIST
 l_dict_tasks_tuple = "in_task_group_id,in_task_id", [
     task for task, sql in t.DICT_TEST_TASKS_SQL.items()
-    # (1,1)
+    # (1, 1), (2, 5)
 ]
+
+
+@pytest.fixture(scope='session', autouse=True)
+def fn_init_and_cleanup_test_session():
+    # Will be executed before the first test
+
+    tv.fn_clean_up_all_folders()
+
+    yield t.SPARK_SESSION
+
+    # Will be executed after last
+    tv.fn_clean_up_all_folders()
+    tv.fn_close_session()
 
 
 def fn_get_test_task_filter_dict() -> Dict[TestTask, str]:
@@ -104,3 +117,9 @@ def test_task_data(in_task_group_id, in_task_id, in_task_type):
                         in_task_type=in_task_type,
                         in_dict_all_group_tasks=t.DICT_ALL_GROUP_TASKS,
                         in_test_task_filter=DICT_TEST_TASK_FILTERS)
+
+
+@pytest.mark.spark
+@pytest.mark.parametrize("in_task_group_id", [1])
+def test_fn_run_task_group_sql(in_task_group_id):
+    tv.fn_run_task_group_sql(in_task_group_id)

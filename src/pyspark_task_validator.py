@@ -19,7 +19,7 @@ FOLDER_DATA: str = os.environ.get("SPARK_DATA", "/opt/spark-data")
 FOLDER_APPS: str = os.environ.get("SPARK_APPS", "/opt/spark-apps")
 FOLDER_TEST: str = os.environ.get("SPARK_TEST", "/opt/spark-test")
 FOLDER_TABLES: str = f"{FOLDER_DATA}/tables"
-SPARK_SESSION: SparkSession = SparkSession.builder.appName(_APP_NAME).getOrCreate()
+SPARK_SESSION: SparkSession = None
 ROUND_DIGITS: int = 2
 
 FILE_TYPE_CSV: str = "csv"
@@ -30,6 +30,7 @@ TRANSACTIONS = 'transactions'
 COUNTRY_ABBREVIATION = 'country_abbreviation'
 
 LIST_OF_ALL_INPUT_TABLES = [ACCOUNTS, TRANSACTIONS, COUNTRY_ABBREVIATION]
+LIST_OF_INIT_TABLES = {}
 
 TASK_TYPE_SQL = "sql"
 TASK_TYPE_DF = "df"
@@ -55,13 +56,7 @@ class TaskDef:
 
     sql: str
 
-    @property
-    def sql_ext(self):
-        """
-        sql extension in read only mode
-        """
-        return ".sql"
-
+    _sql_ext: str = ".sql"
     _sql_name: str
     _sql_name_no_ext: str
 
@@ -85,7 +80,7 @@ class TaskDef:
         Setter for sql_name, set _sql_name_no_ext at the same time
         """
         self._sql_name = val
-        self._sql_name_no_ext = val.replace(self.sql_ext, "")
+        self._sql_name_no_ext = val.replace(self._sql_ext, "")
 
     @property
     def sql_path(self):
@@ -104,8 +99,8 @@ class TaskDef:
             self.sql_name = ""
             self._sql_path = ""
         else:
-            if self.sql_ext not in val:
-                val += self.sql_ext
+            if self._sql_ext not in val:
+                val += self._sql_ext
 
             self._sql_path = val
             self.sql_name = os.path.basename(val)
@@ -123,7 +118,6 @@ class TaskDef:
                        f" data_frame : {self.data_frame} ",
                        f" sql_path : {self.sql_path} ",
                        f" sql_name : {self.sql_name} ",
-                       f" sql_ext : {self.sql_ext} ",
                        f" sql : {self.sql} ",
                        "**************************"]:
             l_str += l_line + "\n"
@@ -222,25 +216,29 @@ def fn_init_tables(*args):
     """
     Function for tables initialisation, register existing csv files as SQL views
     """
-    l_result_dict = {}
+    global LIST_OF_INIT_TABLES
 
     if not args:
         args = LIST_OF_ALL_INPUT_TABLES
 
     for l_one_table in args:
-        l_result_dict.setdefault(l_one_table,
-                                 fn_create_df_from_parquet(in_sub_folder=l_one_table))
+        if l_one_table not in LIST_OF_INIT_TABLES:
+            l_one_df = fn_create_df_from_parquet(in_sub_folder=l_one_table)
+            LIST_OF_INIT_TABLES.setdefault(l_one_table, l_one_df)
 
-    return l_result_dict
+    return LIST_OF_INIT_TABLES
 
 
 def fn_get_task_target_folder(in_task_type: str,
-                              in_task_group_id: int,
+                              in_task_group_id: int = None,
                               in_tgt_folder: str = None):
     """
     Gives path to target folder (for task or group)
     """
-    l_task_group_folder = f"{FOLDER_DATA}/{in_task_type}/task{in_task_group_id}"
+    l_task_group_folder = f"{FOLDER_DATA}/{in_task_type}"
+
+    if in_task_group_id:
+        l_task_group_folder += f"/task{in_task_group_id}"
 
     if in_tgt_folder is None:
         l_target_folder = f"{l_task_group_folder}"
@@ -374,27 +372,30 @@ def fn_get_task_group_range(in_task_group_id: int = None,
     return l_range
 
 
-def fn_init(in_init_all_tables: bool = False):
+def fn_get_or_create_spark_session():
     """
-    Function to init spark tables and spark session
+    Function to init spark session
     """
-
     global SPARK_SESSION
     SPARK_SESSION = SparkSession.builder.appName(_APP_NAME).getOrCreate()
 
-    if in_init_all_tables:
-        fn_init_tables()
+    fn_init_tables()
+
+    return SPARK_SESSION
 
 
 def fn_close_session():
     """
-    Function to close spark session
+    Function close session and invalidate init tables list
     """
+    global LIST_OF_INIT_TABLES
+
     SPARK_SESSION.stop()
+    LIST_OF_INIT_TABLES = []
 
 
-def fn_clean_up_data_folder(in_task_group_id: int,
-                            in_task_type: str):
+def fn_clean_up_data_folder(in_task_type: str,
+                            in_task_group_id: int = None):
     """
     Function to clean up data folder before task execution
     """
@@ -405,12 +406,15 @@ def fn_clean_up_data_folder(in_task_group_id: int,
     shutil.rmtree(l_group_path, onerror=FileNotFoundError)
 
 
+def fn_clean_up_all_folders():
+    for l_one_tt in TASK_TYPES_LIST:
+        fn_clean_up_data_folder(in_task_type=l_one_tt)
+
+
 def fn_run_task_group_sql(in_task_group_id: int):
     """
     Function to run SQLs in task folder
     """
-
-    fn_init(in_init_all_tables=True)
 
     l_range = fn_get_task_group_range(in_task_group_id)
 
@@ -427,7 +431,7 @@ def fn_run_task_group_sql(in_task_group_id: int):
         for l_items in l_dir.iterdir():
             # checking if it's a file
             if l_items.is_file():
-                l_sql_file_name = l_items.name.removesuffix(TaskDef.sql_ext)
+                l_sql_file_name = l_items.name.replace(".sql", "")
 
                 with l_items.open(mode="r") as l_sql_file:
                     l_sql_file_content = l_sql_file.read()
@@ -436,8 +440,6 @@ def fn_run_task_group_sql(in_task_group_id: int):
                                     in_sql=l_sql_file_content,
                                     in_task_group_id=l_one_task_group_id,
                                     in_repartition_tgt=1)
-
-    fn_close_session()
 
 
 def fn_get_one_task_definition(in_task_group_id: int,
@@ -615,4 +617,8 @@ if __name__ == "__main__":
     l_args = l_args.parse_args()
     l_group_id = l_args.group_id
 
-    fn_run_task_group_sql(in_task_group_id=l_group_id)
+    try:
+        fn_get_or_create_spark_session()
+        fn_run_task_group_sql(in_task_group_id=l_group_id)
+    finally:
+        fn_close_session()

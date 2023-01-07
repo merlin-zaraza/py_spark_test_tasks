@@ -29,6 +29,7 @@ _l_dict_test_sql = {
 DICT_TEST_TASKS_SQL = {k: "{}.{}_{}".format(k.group_id, k.task_id, v) for k, v in _l_dict_test_sql.items()}
 TEST_TASK_FUNCTION_NAME = "fn_get_task_def_list"
 
+
 def fn_get_task_def_list1() -> List[TaskDef]:
     """
     Task 1 Data Frames List
@@ -274,6 +275,8 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDef]]:
     return l_result
 
 
+SPARK_SESSION = tv.fn_get_or_create_spark_session()
+
 l_all_df_dict = tv.fn_init_tables()
 
 DF_ACCOUNTS: DataFrame = l_all_df_dict[tv.ACCOUNTS]
@@ -289,7 +292,10 @@ if __name__ == "__main__":
     l_task_id = l_args.task_id
     l_task_type = l_args.task_type
 
-    tv.fn_run_task_type(in_task_group_id=l_group_id,
-                       in_task_id=l_task_id,
-                       in_task_type=l_task_type,
-                       in_dict_all_group_tasks=DICT_ALL_GROUP_TASKS)
+    try:
+        tv.fn_run_task_type(in_task_group_id=l_group_id,
+                            in_task_id=l_task_id,
+                            in_task_type=l_task_type,
+                            in_dict_all_group_tasks=DICT_ALL_GROUP_TASKS)
+    finally:
+        tv.fn_close_session()
