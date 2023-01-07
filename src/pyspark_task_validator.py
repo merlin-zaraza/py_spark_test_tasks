@@ -1,5 +1,5 @@
 """
-Package for running direct sql on files
+Package for execution and validation of the test tasks
 """
 import pathlib
 import argparse

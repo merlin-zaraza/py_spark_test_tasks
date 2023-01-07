@@ -1,11 +1,11 @@
 """
-Package for running direct sql on files
+Package that defines realization of test tasks and executes them
 """
 import sys
 from typing import Dict, List
 from pyspark.sql import functions as f, DataFrame
 
-import pyspark_task_validator as t
+import pyspark_task_validator as tv
 from pyspark_task_validator import TaskDef, TestTask
 
 _l_dict_test_sql = {
@@ -27,7 +27,7 @@ _l_dict_test_sql = {
 }
 
 DICT_TEST_TASKS_SQL = {k: "{}.{}_{}".format(k.group_id, k.task_id, v) for k, v in _l_dict_test_sql.items()}
-
+TEST_TASK_FUNCTION_NAME = "fn_get_task_def_list"
 
 def fn_get_task_def_list1() -> List[TaskDef]:
     """
@@ -40,7 +40,7 @@ def fn_get_task_def_list1() -> List[TaskDef]:
 
     l_df_account_balance = DF_TRANSACTIONS \
         .groupBy(f.col("id")) \
-        .agg(f.round(f.sum("amount"), t.ROUND_DIGITS).alias("balance"),
+        .agg(f.round(f.sum("amount"), tv.ROUND_DIGITS).alias("balance"),
              f.max("transaction_date").alias("latest_date"))
 
     return [
@@ -49,7 +49,7 @@ def fn_get_task_def_list1() -> List[TaskDef]:
     ]
 
 
-def fn_inner_join_acc_names_to_df(in_dataframe: t.DataFrame) -> t.DataFrame:
+def fn_inner_join_acc_names_to_df(in_dataframe: tv.DataFrame) -> tv.DataFrame:
     """
     Inner join of "first_name", "last_name" by id
     """
@@ -93,8 +93,8 @@ def fn_get_task_def_list2() -> List[TaskDef]:
         " case when amount < 0 then amount else 0 end as expenses",
         " case when amount > 0 then amount else 0 end as earnings "
     ).groupBy("id") \
-        .agg(f.round(f.abs(f.sum("expenses")), t.ROUND_DIGITS).alias("expenses"),
-             f.round(f.sum("earnings"), t.ROUND_DIGITS).alias("earnings"))
+        .agg(f.round(f.abs(f.sum("expenses")), tv.ROUND_DIGITS).alias("expenses"),
+             f.round(f.sum("earnings"), tv.ROUND_DIGITS).alias("earnings"))
 
     l_df_total_expenses_with_user_info = fn_inner_join_acc_names_to_df(l_df_total_expenses)
 
@@ -104,7 +104,7 @@ def fn_get_task_def_list2() -> List[TaskDef]:
         "int(substring(transaction_date, 1, 4)) as tr_year",
     ).groupBy("id") \
         .pivot("tr_year") \
-        .agg(f.round(f.sum("earnings").alias("earnings"), t.ROUND_DIGITS)) \
+        .agg(f.round(f.sum("earnings").alias("earnings"), tv.ROUND_DIGITS)) \
         .fillna(value=0)
 
     return [
@@ -130,7 +130,7 @@ def fn_get_task_def_list3() -> List[TaskDef]:
         "amount"
     ).where("transaction_date like '2021%'") \
         .groupBy("id") \
-        .agg(f.round(f.avg("amount"), t.ROUND_DIGITS).alias("avg_amount"))
+        .agg(f.round(f.avg("amount"), tv.ROUND_DIGITS).alias("avg_amount"))
 
     l_df_account_types_count = DF_TRANSACTIONS \
         .groupBy(f.col("account_type")) \
@@ -138,7 +138,7 @@ def fn_get_task_def_list3() -> List[TaskDef]:
 
     l_df_top_10_positive = DF_TRANSACTIONS.where("amount > 0") \
         .groupBy("id") \
-        .agg(f.round(f.sum("amount"), t.ROUND_DIGITS).alias("total_amount")) \
+        .agg(f.round(f.sum("amount"), tv.ROUND_DIGITS).alias("total_amount")) \
         .orderBy(f.col("total_amount").desc()) \
         .limit(10)
 
@@ -165,7 +165,7 @@ def fn_get_richest_person_in_country_broadcast():
         "amount"
     ).groupBy("id") \
         .agg(
-        f.round(f.sum("amount"), t.ROUND_DIGITS).alias("total_amount")
+        f.round(f.sum("amount"), tv.ROUND_DIGITS).alias("total_amount")
     )
 
     l_df_richest_person_account_info = l_richest_person_transactions.join(
@@ -219,7 +219,7 @@ def fn_get_all_info_broadcast():
                 "amount",
                 "account_type") \
         .groupBy("id", "account_type") \
-        .agg(f.round(f.sum("amount"), t.ROUND_DIGITS).alias("total_amount"))
+        .agg(f.round(f.sum("amount"), tv.ROUND_DIGITS).alias("total_amount"))
     # f.concat_ws(",", f.collect_list("account_type")).alias("account_types")
 
     l_df_trans_and_acc_info = l_df_trans_info \
@@ -254,15 +254,15 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDef]]:
     """
     l_result = {}
 
-    for l_one_task_group_id in t.fn_get_task_group_range():
-        fn_get_task_def_list = getattr(sys.modules[__name__], f'fn_get_task_def_list{l_one_task_group_id}')
+    for l_one_task_group_id in tv.fn_get_task_group_range():
+        fn_get_task_def_list = getattr(sys.modules[__name__], f'{TEST_TASK_FUNCTION_NAME}{l_one_task_group_id}')
 
         l_task_df_list: List[TaskDef] = fn_get_task_def_list()
 
         for l_task_ind, l_task_df in enumerate(l_task_df_list):
             l_task_df.test_task = TestTask(l_one_task_group_id, l_task_ind + 1)
 
-            l_sql_folder = t.fn_get_sql_task_folder_path(in_task_group_id=l_one_task_group_id)
+            l_sql_folder = tv.fn_get_sql_task_folder_path(in_task_group_id=l_one_task_group_id)
             l_sql_name = DICT_TEST_TASKS_SQL[l_task_df.test_task]
 
             l_task_df.sql_path = f"{l_sql_folder}/{l_sql_name}"
@@ -274,22 +274,22 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDef]]:
     return l_result
 
 
-l_all_df_dict = t.fn_init_tables()
+l_all_df_dict = tv.fn_init_tables()
 
-DF_ACCOUNTS: DataFrame = l_all_df_dict[t.ACCOUNTS]
-DF_TRANSACTIONS: DataFrame = l_all_df_dict[t.TRANSACTIONS]
-DF_COUNTRY_ABBR: DataFrame = l_all_df_dict[t.COUNTRY_ABBREVIATION]
+DF_ACCOUNTS: DataFrame = l_all_df_dict[tv.ACCOUNTS]
+DF_TRANSACTIONS: DataFrame = l_all_df_dict[tv.TRANSACTIONS]
+DF_COUNTRY_ABBR: DataFrame = l_all_df_dict[tv.COUNTRY_ABBREVIATION]
 
 DICT_ALL_GROUP_TASKS = fn_get_dict_with_all_tasks()
 
 if __name__ == "__main__":
-    l_args = t.fn_init_argparse(t.TASK_TYPE_DF)
+    l_args = tv.fn_init_argparse(tv.TASK_TYPE_DF)
     l_args = l_args.parse_args()
     l_group_id = l_args.group_id
     l_task_id = l_args.task_id
     l_task_type = l_args.task_type
 
-    t.fn_run_task_type(in_task_group_id=l_group_id,
+    tv.fn_run_task_type(in_task_group_id=l_group_id,
                        in_task_id=l_task_id,
                        in_task_type=l_task_type,
                        in_dict_all_group_tasks=DICT_ALL_GROUP_TASKS)
