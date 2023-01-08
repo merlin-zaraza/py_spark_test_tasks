@@ -424,14 +424,15 @@ def fn_clean_up_data_folder(in_task_type: str,
 
     CURRENT_LOGGER.info(f'l_group_path : {l_group_path}')
 
-    l_dir = pathlib.Path(l_group_path)
+    if os.path.exists(l_group_path):
+        l_dir = pathlib.Path(l_group_path)
 
-    # iterating the directory
-    for l_item in l_dir.iterdir():
-        # checking if it's a file
-        if l_item.is_dir():
-            CURRENT_LOGGER.info(f'fn_clean_up_data_folder: Deleting {l_item}')
-            shutil.rmtree(l_item, onerror=FileNotFoundError)
+        # iterating the directory
+        for l_item in l_dir.iterdir():
+            # checking if it's a file
+            if l_item.is_dir():
+                CURRENT_LOGGER.info(f'fn_clean_up_data_folder: Deleting {l_item}')
+                shutil.rmtree(l_item, onerror=FileNotFoundError)
 
 
 @add_logging(in_default_logger=CURRENT_LOGGER)
