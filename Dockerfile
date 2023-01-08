@@ -43,6 +43,7 @@ SPARK_LOG_DIR=/opt/spark/logs \
 SPARK_APPS=/opt/spark-apps \
 SPARK_DATA=/opt/spark-data \
 SPARK_TEST=/opt/spark-test \
+SPARK_LOG=/opt/spark-log \
 SPARK_MASTER_LOG=/opt/spark/logs/spark-master.out \
 SPARK_WORKER_LOG=/opt/spark/logs/spark-worker.out \
 SPARK_WORKER_WEBUI_PORT=8080 \
@@ -66,7 +67,7 @@ touch $SPARK_WORKER_LOG && \
 ln -sf /dev/stdout $SPARK_MASTER_LOG && \
 ln -sf /dev/stdout $SPARK_WORKER_LOG
 
-RUN mkdir -p $SPARK_TEST
+RUN mkdir -p $SPARK_TEST $SPARK_LOG
 
 COPY bash/start-spark.sh /
 COPY bash/.bashrc /root/.bashrc

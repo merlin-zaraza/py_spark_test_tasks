@@ -6,18 +6,22 @@ import argparse
 import os
 import re
 import shutil
+import logging as log
+import datetime as dt
+
 from typing import List, Dict, Tuple
 from collections import namedtuple
 
 from pyspark.sql import SparkSession, DataFrame, DataFrameWriter
 
 Task = namedtuple("Task", "group_id task_id")
-_APP_NAME = "py_spark_tasks"
+_APP_NAME = "py_spark_task_validator"
 
 STR_TRUE: str = "true"
 FOLDER_DATA: str = os.environ.get("SPARK_DATA", "/opt/spark-data")
 FOLDER_APPS: str = os.environ.get("SPARK_APPS", "/opt/spark-apps")
 FOLDER_TEST: str = os.environ.get("SPARK_TEST", "/opt/spark-test")
+FOLDER_LOG: str = os.environ.get("SPARK_LOG", "/opt/spark-log")
 FOLDER_TABLES: str = f"{FOLDER_DATA}/tables"
 SPARK_SESSION: SparkSession = None
 ROUND_DIGITS: int = 2
@@ -38,6 +42,46 @@ TASK_TYPES_LIST = [TASK_TYPE_DF, TASK_TYPE_SQL]
 
 _DF_PARTITIONS_COUNT: int = 20
 _SEPARATOR: str = ";"
+_logger = log.getLogger(os.getenv("USER", "user"))
+
+
+def fn_get_log(in_file_path : str = __file__, in_log_folder: str = FOLDER_LOG):
+    l_pid = os.getpid()
+    l_date = str(dt.date.today().strftime("%Y %m, %d"))
+
+    l_file_name = os.path.basename(in_file_path)
+    l_log_file = f"{l_file_name}_{l_date}_{l_pid}.log"
+
+    if in_log_folder:
+        l_log_file = f"{in_log_folder}/{l_log_file}"
+
+    return l_log_file
+
+
+def init_logger(in_logger=_logger):
+    l_log_file = os.getenv("LOG_FILE", fn_get_log())
+
+    in_logger.setLevel(log.INFO)
+
+    # create console handler and set level to debug
+    l_stream_handler = log.StreamHandler()
+    l_file_handler = log.FileHandler(l_log_file)
+
+    l_file_handler.setLevel(log.INFO)
+    l_stream_handler.setLevel(log.INFO)
+
+    # create formatter
+    l_formatter = log.Formatter('[ %(asctime)s ] > %(levelname)s: %(message)s')
+
+    # add formatter to l_stream_handler
+    l_file_handler.setFormatter(l_formatter)
+    l_stream_handler.setFormatter(l_formatter)
+
+    # add l_stream_handler to logger
+    in_logger.addHandler(l_stream_handler)
+    in_logger.addHandler(l_file_handler)
+
+    return in_logger
 
 
 def fn_get_sql_task_folder_path(in_task_group_id: int) -> str:
@@ -617,6 +661,8 @@ def fn_df_to_parquet_file(in_df_dict: Dict[str, DataFrame]):
                     in_tgt_path=FOLDER_TABLES,
                     in_output_file_type=FILE_TYPE_PARQUET)
 
+
+init_logger()
 
 if __name__ == "__main__":
     l_args = fn_init_argparse(TASK_TYPE_SQL)

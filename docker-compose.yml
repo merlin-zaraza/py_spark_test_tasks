@@ -19,6 +19,7 @@ x-spark-common:
     - ./src:/opt/spark-apps
     - ./data:/opt/spark-data
     - ./test:/opt/spark-test
+    - ./log:/opt/spark-log
 
 services:
 
