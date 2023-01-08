@@ -6,13 +6,12 @@ import argparse
 import os
 import re
 import shutil
-import logging as log
-import datetime as dt
 
 from typing import List, Dict, Tuple
 from collections import namedtuple
 
 from pyspark.sql import SparkSession, DataFrame, DataFrameWriter
+from project_logs import add_logging, DefaultLogger
 
 Task = namedtuple("Task", "group_id task_id")
 _APP_NAME = "py_spark_task_validator"
@@ -26,6 +25,10 @@ FOLDER_TABLES: str = f"{FOLDER_DATA}/tables"
 SPARK_SESSION: SparkSession = None
 ROUND_DIGITS: int = 2
 
+CURRENT_LOGGER = DefaultLogger(in_loger_name=_APP_NAME,
+                               in_log_folder=FOLDER_LOG,
+                               in_file=__file__)
+
 FILE_TYPE_CSV: str = "csv"
 FILE_TYPE_PARQUET: str = "parquet"
 
@@ -34,7 +37,7 @@ TRANSACTIONS = 'transactions'
 COUNTRY_ABBREVIATION = 'country_abbreviation'
 
 LIST_OF_ALL_INPUT_TABLES = [ACCOUNTS, TRANSACTIONS, COUNTRY_ABBREVIATION]
-LIST_OF_INIT_TABLES = {}
+DICT_OF_INIT_DATAFRAMES: Dict[str, DataFrame] = {}
 
 TASK_TYPE_SQL = "sql"
 TASK_TYPE_DF = "df"
@@ -42,46 +45,6 @@ TASK_TYPES_LIST = [TASK_TYPE_DF, TASK_TYPE_SQL]
 
 _DF_PARTITIONS_COUNT: int = 20
 _SEPARATOR: str = ";"
-_logger = log.getLogger(os.getenv("USER", "user"))
-
-
-def fn_get_log(in_file_path : str = __file__, in_log_folder: str = FOLDER_LOG):
-    l_pid = os.getpid()
-    l_date = str(dt.date.today().strftime("%Y %m, %d"))
-
-    l_file_name = os.path.basename(in_file_path)
-    l_log_file = f"{l_file_name}_{l_date}_{l_pid}.log"
-
-    if in_log_folder:
-        l_log_file = f"{in_log_folder}/{l_log_file}"
-
-    return l_log_file
-
-
-def init_logger(in_logger=_logger):
-    l_log_file = os.getenv("LOG_FILE", fn_get_log())
-
-    in_logger.setLevel(log.INFO)
-
-    # create console handler and set level to debug
-    l_stream_handler = log.StreamHandler()
-    l_file_handler = log.FileHandler(l_log_file)
-
-    l_file_handler.setLevel(log.INFO)
-    l_stream_handler.setLevel(log.INFO)
-
-    # create formatter
-    l_formatter = log.Formatter('[ %(asctime)s ] > %(levelname)s: %(message)s')
-
-    # add formatter to l_stream_handler
-    l_file_handler.setFormatter(l_formatter)
-    l_stream_handler.setFormatter(l_formatter)
-
-    # add l_stream_handler to logger
-    in_logger.addHandler(l_stream_handler)
-    in_logger.addHandler(l_file_handler)
-
-    return in_logger
 
 
 def fn_get_sql_task_folder_path(in_task_group_id: int) -> str:
@@ -177,6 +140,7 @@ class TaskDef:
         self.sql_path = in_sql_path
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_init_argparse(in_def_task_type) -> argparse.ArgumentParser:
     """
     Argument parser
@@ -200,6 +164,7 @@ def fn_init_argparse(in_def_task_type) -> argparse.ArgumentParser:
     return parser
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_get_default_view_name(in_file_name, in_view_name):
     """
     Function for getting default view name
@@ -208,6 +173,7 @@ def fn_get_default_view_name(in_file_name, in_view_name):
     return in_view_name if in_view_name else in_file_name
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_create_df_from_parquet(in_file_name: str = "*",
                               in_view_name: str = None,
                               in_repartition: int = _DF_PARTITIONS_COUNT,
@@ -233,6 +199,7 @@ def fn_create_df_from_parquet(in_file_name: str = "*",
     return l_df
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_create_df_from_csv_file(in_file_name: str = "*",
                                in_separator: str = _SEPARATOR,
                                in_view_name: str = None,
@@ -256,23 +223,23 @@ def fn_create_df_from_csv_file(in_file_name: str = "*",
     return l_df
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_init_tables(*args):
     """
     Function for tables initialisation, register existing csv files as SQL views
     """
-    global LIST_OF_INIT_TABLES
-
     if not args:
         args = LIST_OF_ALL_INPUT_TABLES
 
     for l_one_table in args:
-        if l_one_table not in LIST_OF_INIT_TABLES:
+        if l_one_table not in DICT_OF_INIT_DATAFRAMES:
             l_one_df = fn_create_df_from_parquet(in_sub_folder=l_one_table)
-            LIST_OF_INIT_TABLES.setdefault(l_one_table, l_one_df)
+            DICT_OF_INIT_DATAFRAMES.setdefault(l_one_table, l_one_df)
 
-    return LIST_OF_INIT_TABLES
+    return DICT_OF_INIT_DATAFRAMES
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_get_task_target_folder(in_task_type: str,
                               in_task_group_id: int = None,
                               in_tgt_folder: str = None):
@@ -292,6 +259,7 @@ def fn_get_task_target_folder(in_task_type: str,
     return l_target_folder
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_run_task(in_tgt_folder: str,
                 in_data_frame: DataFrame = None,
                 in_sql: str = None,
@@ -344,6 +312,7 @@ def fn_run_task(in_tgt_folder: str,
     # l_df.show()
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_run_tasks_by_definition_list(in_task_group_id: int,
                                     in_task_definition_list: List[TaskDef],
                                     in_task_type: str,
@@ -366,6 +335,7 @@ def fn_run_tasks_by_definition_list(in_task_group_id: int,
                             in_repartition_tgt=in_repartition_tgt)
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_run_task_sql(in_tgt_folder: str,
                     in_sql: str,
                     in_task_group_id: int = 1,
@@ -380,6 +350,7 @@ def fn_run_task_sql(in_tgt_folder: str,
                 in_repartition_tgt=in_repartition_tgt)
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_run_task_df(in_tgt_folder: str,
                    in_data_frame: DataFrame,
                    in_task_group_id: int = 1,
@@ -393,6 +364,7 @@ def fn_run_task_df(in_tgt_folder: str,
                 in_repartition_tgt=in_repartition_tgt)
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_get_task_group_range(in_task_group_id: int = None,
                             in_dict_all_group_tasks: Dict = None, ):
     """
@@ -416,6 +388,7 @@ def fn_get_task_group_range(in_task_group_id: int = None,
     return l_range
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER, in_major_step=True)
 def fn_get_or_create_spark_session():
     """
     Function to init spark session
@@ -428,16 +401,18 @@ def fn_get_or_create_spark_session():
     return SPARK_SESSION
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_close_session():
     """
     Function close session and invalidate init tables list
     """
-    global LIST_OF_INIT_TABLES
+    global DICT_OF_INIT_DATAFRAMES
 
     SPARK_SESSION.stop()
-    LIST_OF_INIT_TABLES = []
+    DICT_OF_INIT_DATAFRAMES = {}
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_clean_up_data_folder(in_task_type: str,
                             in_task_group_id: int = None):
     """
@@ -447,11 +422,19 @@ def fn_clean_up_data_folder(in_task_type: str,
     l_group_path = fn_get_task_target_folder(in_task_group_id=in_task_group_id,
                                              in_task_type=in_task_type)
 
-    for l_item in os.listdir(l_group_path):
-        if os.path.isdir(l_item):
-            shutil.rmtree(l_item, onerror=FileNotFoundError, )
+    CURRENT_LOGGER.info(f'l_group_path : {l_group_path}')
+
+    l_dir = pathlib.Path(l_group_path)
+
+    # iterating the directory
+    for l_item in l_dir.iterdir():
+        # checking if it's a file
+        if l_item.is_dir():
+            CURRENT_LOGGER.info(f'fn_clean_up_data_folder: Deleting {l_item}')
+            shutil.rmtree(l_item, onerror=FileNotFoundError)
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_clean_up_all_folders():
     """
     Function for clean up target folders after getting sql/dataframe results
@@ -461,6 +444,7 @@ def fn_clean_up_all_folders():
         fn_clean_up_data_folder(in_task_type=l_one_tt)
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER, in_major_step=True)
 def fn_run_task_group_sql(in_task_group_id: int):
     """
     Function to run SQLs in task folder
@@ -661,8 +645,6 @@ def fn_df_to_parquet_file(in_df_dict: Dict[str, DataFrame]):
                     in_tgt_path=FOLDER_TABLES,
                     in_output_file_type=FILE_TYPE_PARQUET)
 
-
-init_logger()
 
 if __name__ == "__main__":
     l_args = fn_init_argparse(TASK_TYPE_SQL)

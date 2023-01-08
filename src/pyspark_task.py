@@ -292,7 +292,7 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDef]]:
 
 SPARK_SESSION = tv.fn_get_or_create_spark_session()
 
-l_all_df_dict = tv.fn_init_tables()
+l_all_df_dict = tv.DICT_OF_INIT_DATAFRAMES
 
 DF_ACCOUNTS: DataFrame = l_all_df_dict[tv.ACCOUNTS]
 DF_TRANSACTIONS: DataFrame = l_all_df_dict[tv.TRANSACTIONS]
