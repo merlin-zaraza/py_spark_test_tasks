@@ -11,7 +11,7 @@ from collections import namedtuple
 
 from pyspark.sql import SparkSession, DataFrame, DataFrameWriter
 
-TestTask = namedtuple("TestTask", "group_id task_id")
+Task = namedtuple("Task", "group_id task_id")
 _APP_NAME = "py_spark_tasks"
 
 STR_TRUE: str = "true"
@@ -126,7 +126,7 @@ class TaskDef:
 
     def __init__(self, in_data_frame: DataFrame,
                  in_sql_path: str = None,
-                 in_test_task: TestTask = None):
+                 in_test_task: Task = None):
 
         self.data_frame = in_data_frame
         self.test_task = in_test_task
@@ -403,10 +403,16 @@ def fn_clean_up_data_folder(in_task_type: str,
     l_group_path = fn_get_task_target_folder(in_task_group_id=in_task_group_id,
                                              in_task_type=in_task_type)
 
-    shutil.rmtree(l_group_path, onerror=FileNotFoundError)
+    for l_item in os.listdir(l_group_path):
+        if os.path.isdir(l_item):
+            shutil.rmtree(l_item, onerror=FileNotFoundError, )
 
 
 def fn_clean_up_all_folders():
+    """
+    Function for clean up target folders after getting sql/dataframe results
+    :return:
+    """
     for l_one_tt in TASK_TYPES_LIST:
         fn_clean_up_data_folder(in_task_type=l_one_tt)
 
@@ -542,7 +548,7 @@ def fn_run_test_task(in_task_group_id: int,
     l_src_filter = STR_TRUE
 
     if in_test_task_filter:
-        l_key = TestTask(in_task_group_id, in_task_id)
+        l_key = Task(in_task_group_id, in_task_id)
         in_test_task_filter.setdefault(l_key, STR_TRUE)
         l_src_filter = in_test_task_filter[l_key]
 

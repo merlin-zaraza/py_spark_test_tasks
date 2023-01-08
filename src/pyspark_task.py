@@ -6,28 +6,28 @@ from typing import Dict, List
 from pyspark.sql import functions as f, DataFrame
 
 import pyspark_task_validator as tv
-from pyspark_task_validator import TaskDef, TestTask
+from pyspark_task_validator import TaskDef, Task
 
 _l_dict_test_sql = {
-    TestTask(1, 1): "account_types_count",
-    TestTask(1, 2): "account_balance",
-    TestTask(2, 1): "accounts_btw_18_30",
-    TestTask(2, 2): "accounts_non_pro",
-    TestTask(2, 3): "accounts_top_5",
-    TestTask(2, 4): "total_per_year",
-    TestTask(2, 5): "total_earnings_pivot",
-    TestTask(3, 1): "first_last_concatenated",
-    TestTask(3, 2): "avg_transaction_amount_2021_per_client",
-    TestTask(3, 3): "account_types_count",
-    TestTask(3, 4): "top_10_positive",
-    TestTask(3, 5): "clients_sorted_by_first_name_descending",
-    TestTask(4, 1): "person_with_biggest_balance_in_country",
-    TestTask(4, 2): "invalid_accounts",
-    TestTask(4, 3): "single_dataset",
-    TestTask(5, 1): "account_types_count",
+    Task(1, 1): "account_types_count",
+    Task(1, 2): "account_balance",
+    Task(2, 1): "accounts_btw_18_30",
+    Task(2, 2): "accounts_non_pro",
+    Task(2, 3): "accounts_top_5",
+    Task(2, 4): "total_per_year",
+    Task(2, 5): "total_earnings_pivot",
+    Task(3, 1): "first_last_concatenated",
+    Task(3, 2): "avg_transaction_amount_2021_per_client",
+    Task(3, 3): "account_types_count",
+    Task(3, 4): "top_10_positive",
+    Task(3, 5): "clients_sorted_by_first_name_descending",
+    Task(4, 1): "person_with_biggest_balance_in_country",
+    Task(4, 2): "invalid_accounts",
+    Task(4, 3): "single_dataset",
+    Task(5, 1): "account_types_count",
 }
 
-DICT_TEST_TASKS_SQL = {k: "{}.{}_{}".format(k.group_id, k.task_id, v) for k, v in _l_dict_test_sql.items()}
+DICT_TEST_TASKS_SQL = {k: f"{k.group_id}.{k.task_id}_{v}" for k, v in _l_dict_test_sql.items()}
 TEST_TASK_FUNCTION_NAME = "fn_get_task_def_list"
 
 
@@ -276,7 +276,7 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDef]]:
         l_task_df_list: List[TaskDef] = fn_get_task_def_list()
 
         for l_task_ind, l_task_df in enumerate(l_task_df_list):
-            l_task_df.test_task = TestTask(l_one_task_group_id, l_task_ind + 1)
+            l_task_df.test_task = Task(l_one_task_group_id, l_task_ind + 1)
 
             l_sql_folder = tv.fn_get_sql_task_folder_path(in_task_group_id=l_one_task_group_id)
             l_sql_name = DICT_TEST_TASKS_SQL[l_task_df.test_task]
