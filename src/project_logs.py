@@ -124,7 +124,7 @@ def add_logging(_func=None, *,
                 return result
             except Exception as ex_all:
                 logger.exception('Exception raised in %s exception: %s', l_func_name, str(ex_all))
-                l_exit_code = ex_all.args[0]
+                l_exit_code = 1
                 raise ex_all
             finally:
                 if in_major_step:

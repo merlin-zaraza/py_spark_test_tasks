@@ -489,6 +489,7 @@ def fn_get_one_task_definition(in_task_group_id: int,
     return in_dict_all_group_tasks[in_task_group_id][in_task_id - 1]
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER, in_major_step=True)
 def fn_run_task_type(in_dict_all_group_tasks: Dict[int, List[TaskDef]],
                      in_task_group_id: int = None,
                      in_task_id: int = None,
@@ -530,6 +531,7 @@ def fn_run_task_type(in_dict_all_group_tasks: Dict[int, List[TaskDef]],
                                         in_task_type=in_task_type)
 
 
+@add_logging(in_default_logger=CURRENT_LOGGER, in_major_step=True)
 def fn_run_test_task(in_task_group_id: int,
                      in_task_id: int,
                      in_dict_all_group_tasks: Dict[int, List[TaskDef]],
