@@ -189,8 +189,7 @@ def fn_create_df_from_parquet(in_file_name: str = "*",
 
     l_df = SPARK_SESSION.read \
         .parquet(f"file://{in_folder_path}/{l_file_name}.{FILE_TYPE_PARQUET}") \
-        .repartition(in_repartition) \
-        .cache()
+        .repartition(in_repartition)
 
     l_view_name = fn_get_default_view_name(in_file_name, in_view_name if in_view_name else in_sub_folder)
     l_df.createTempView(l_view_name)
@@ -213,8 +212,7 @@ def fn_create_df_from_csv_file(in_file_name: str = "*",
         .option("inferSchema", STR_TRUE) \
         .option("sep", in_separator) \
         .csv(f"file://{in_folder_path}/{in_file_name}.{FILE_TYPE_CSV}") \
-        .repartition(in_repartition) \
-        # .cache()
+        .repartition(in_repartition)
 
     l_view_name = fn_get_default_view_name(in_file_name, in_view_name)
     l_df.createTempView(l_view_name)
@@ -233,6 +231,7 @@ def fn_init_tables(*args):
     for l_one_table in args:
         if l_one_table not in DICT_OF_INIT_DATAFRAMES:
             l_one_df = fn_create_df_from_parquet(in_sub_folder=l_one_table)
+            l_one_df.cache()
             DICT_OF_INIT_DATAFRAMES.setdefault(l_one_table, l_one_df)
 
     return DICT_OF_INIT_DATAFRAMES
