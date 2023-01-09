@@ -214,7 +214,7 @@ def fn_create_df_from_csv_file(in_file_name: str = "*",
         .option("sep", in_separator) \
         .csv(f"file://{in_folder_path}/{in_file_name}.{FILE_TYPE_CSV}") \
         .repartition(in_repartition) \
-        .cache()
+        # .cache()
 
     l_view_name = fn_get_default_view_name(in_file_name, in_view_name)
     l_df.createTempView(l_view_name)
