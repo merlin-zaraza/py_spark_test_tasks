@@ -164,7 +164,6 @@ def fn_init_argparse(in_def_task_type) -> argparse.ArgumentParser:
     return parser
 
 
-@add_logging(in_default_logger=CURRENT_LOGGER)
 def fn_get_default_view_name(in_file_name, in_view_name):
     """
     Function for getting default view name

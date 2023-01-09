@@ -3,6 +3,7 @@ Package for logs generation
 """
 import functools
 import os
+import re
 import logging as log
 import datetime as dt
 
@@ -75,15 +76,29 @@ class DefaultLogger:
         for l_one_msg in l_dict_msg:
             self.logger.info(l_one_msg)
 
-    def start_function(self, in_function_name, in_major_step: bool, *args, **kwargs):
+    def start_function(self, in_function_name,
+                       in_major_step: bool
+                       , *args, **kwargs):
         args_repr = [repr(a) for a in args]
         kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
         signature = ", ".join(args_repr + kwargs_repr)
         l_start_msg = f'Started {in_function_name} called with args {signature}'
         self.step(l_start_msg, in_major_step)
 
-    def end_function(self, in_function_name, in_major_step: bool, in_exit_code):
-        l_end_msg = f'Finished {in_function_name} [[ Exit code : {in_exit_code} ]]'
+    def end_function(self, in_function_name,
+                     in_major_step: bool,
+                     in_exit_code,
+                     l_in_dt_start: dt.datetime = None):
+
+        l_end_msg = f'Finished {in_function_name} '
+
+        if l_in_dt_start:
+            l_diff = dt.datetime.today() - l_in_dt_start
+            l_diff_str = re.search("[^.]+", str(l_diff))[0]
+
+            l_end_msg += f"( Elapsed {l_diff_str} ) "
+
+        l_end_msg += f'[[ Exit code : {in_exit_code} ]]'
 
         self.step(l_end_msg, in_major_step)
 
@@ -108,12 +123,13 @@ def add_logging(_func=None, *,
     :param in_major_step: if True will cover message with *** below and above
     :return:
     """
+
     def decorator_log(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
 
             l_exit_code = 0
-
+            l_dt_start = dt.datetime.today()
             logger = in_default_logger
 
             l_func_name = func.__name__
@@ -128,7 +144,7 @@ def add_logging(_func=None, *,
                 raise ex_all
             finally:
                 if in_major_step:
-                    logger.end_function(l_func_name, in_major_step, l_exit_code)
+                    logger.end_function(l_func_name, in_major_step, l_exit_code, l_dt_start)
 
         return wrapper
 
@@ -136,7 +152,6 @@ def add_logging(_func=None, *,
         return decorator_log
 
     return decorator_log(_func)
-
 
 # def log(_func=None, *, my_logger: Union[MyLogger, logging.Logger] = None):
 #     def decorator_log(func):
