@@ -283,8 +283,6 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDef]]:
 
             l_task_df.sql_path = f"{l_sql_folder}/{l_sql_name}"
 
-            print(l_task_df)
-
         l_result.setdefault(l_one_task_group_id, l_task_df_list)
 
     return l_result

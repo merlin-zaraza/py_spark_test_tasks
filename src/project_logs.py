@@ -4,6 +4,7 @@ Package for logs generation
 import functools
 import os
 import re
+import sys
 import logging as log
 import datetime as dt
 
@@ -17,17 +18,26 @@ class DefaultLogger:
 
     @property
     def logger(self):
+        """
+        :returns logger
+        """
         return self._logger
 
     @logger.setter
     def logger(self, val):
+        """
+        logger setter by name (val)
+        """
         self._logger = log.getLogger(val)
 
     def set_default_logger_config(self):
+        """
+        Setting default config
+        """
         self._logger.setLevel(log.INFO)
 
         # create console handler and set level to debug
-        l_stream_handler = log.StreamHandler()
+        l_stream_handler = log.StreamHandler(sys.stdout)
         l_file_handler = log.FileHandler(self.log_file_name)
 
         l_file_handler.setLevel(log.INFO)
@@ -45,6 +55,10 @@ class DefaultLogger:
         self._logger.addHandler(l_file_handler)
 
     def generate_log_file_name(self):
+        """
+        Generation of unique file name per process
+        :return:
+        """
         l_pid = os.getpid()
         l_date = str(dt.datetime.today().strftime("%Y%m%d_%H-%M-%S"))
 
@@ -57,15 +71,27 @@ class DefaultLogger:
         return l_log_file
 
     def info(self, msg, *args, **kwargs):
+        """
+        Wrapper for Info
+        """
         self.logger.info(msg, *args, **kwargs)
 
     def warning(self, msg, *args, **kwargs):
+        """
+        Wrapper for warning
+        """
         self.logger.warning(self, msg, *args, **kwargs)
 
     def exception(self, msg, *args, exc_info=True, **kwargs):
+        """
+        Wrapper for exception
+        """
         self.logger.exception(msg, *args, exc_info=exc_info, **kwargs)
 
     def step(self, in_msg, in_major_step: bool = True):
+        """
+        Prints message surrounded by two lines with 100 ****
+        """
         l_100stars = "*" * 100
 
         if not in_major_step:
@@ -79,16 +105,32 @@ class DefaultLogger:
     def start_function(self, in_function_name,
                        in_major_step: bool
                        , *args, **kwargs):
+        """"
+        Function to show calling function details
+        """
         args_repr = [repr(a) for a in args]
         kwargs_repr = [f"{k}={v!r}" for k, v in kwargs.items()]
         signature = ", ".join(args_repr + kwargs_repr)
-        l_start_msg = f'Started {in_function_name} called with args {signature}'
+
+        if in_major_step:
+            l_start_msg = "Started "
+        else:
+            l_start_msg = "Executing "
+
+        l_start_msg += f'{in_function_name} '
+
+        if signature:
+            l_start_msg += f"called with args {signature}"
+
         self.step(l_start_msg, in_major_step)
 
     def end_function(self, in_function_name,
                      in_major_step: bool,
                      in_exit_code,
                      l_in_dt_start: dt.datetime = None):
+        """"
+        Function to show function elapsed time and indicate it finish
+        """
 
         l_end_msg = f'Finished {in_function_name} '
 

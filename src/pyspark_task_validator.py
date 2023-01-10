@@ -177,7 +177,8 @@ def fn_create_df_from_parquet(in_file_name: str = "*",
                               in_view_name: str = None,
                               in_repartition: int = _DF_PARTITIONS_COUNT,
                               in_folder_path: str = FOLDER_TABLES,
-                              in_sub_folder: str = None):
+                              in_sub_folder: str = None,
+                              in_cache_df : bool = False):
     """
     Function for registering file in SQL engine as temp view
     """
@@ -190,6 +191,9 @@ def fn_create_df_from_parquet(in_file_name: str = "*",
     l_df = SPARK_SESSION.read \
         .parquet(f"file://{in_folder_path}/{l_file_name}.{FILE_TYPE_PARQUET}") \
         .repartition(in_repartition)
+
+    if in_cache_df:
+        l_df.cache()
 
     l_view_name = fn_get_default_view_name(in_file_name, in_view_name if in_view_name else in_sub_folder)
     l_df.createTempView(l_view_name)
@@ -230,8 +234,8 @@ def fn_init_tables(*args):
 
     for l_one_table in args:
         if l_one_table not in DICT_OF_INIT_DATAFRAMES:
-            l_one_df = fn_create_df_from_parquet(in_sub_folder=l_one_table)
-            l_one_df.cache()
+            l_one_df = fn_create_df_from_parquet(in_sub_folder=l_one_table,
+                                                 in_cache_df=True)
             DICT_OF_INIT_DATAFRAMES.setdefault(l_one_table, l_one_df)
 
     return DICT_OF_INIT_DATAFRAMES
@@ -341,6 +345,9 @@ def fn_run_task_sql(in_tgt_folder: str,
     """
     Function to run 1 SQL
     """
+
+    CURRENT_LOGGER.info(f"Executing sql : \n"
+                        f"{in_sql}")
 
     fn_run_task(in_tgt_folder=in_tgt_folder,
                 in_sql=in_sql,
