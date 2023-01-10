@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager" inherit-compiler-output="true">
+    <exclude-output />
+    <content url="file://$MODULE_DIR$">
+      <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
+    </content>
+    <orderEntry type="jdk" jdkName="Python 3.10" jdkType="Python SDK" />
+    <orderEntry type="sourceFolder" forTests="false" />
+  </component>
+  <component name="PyNamespacePackagesService">
+    <option name="namespacePackageFolders">
+      <list>
+        <option value="$MODULE_DIR$/src/sql" />
+      </list>
+    </option>
+  </component>
+  <component name="TemplatesService">
+    <option name="TEMPLATE_FOLDERS">
+      <list>
+        <option value="$MODULE_DIR$/src/sql" />
+        <option value="$MODULE_DIR$/src/sql/task1" />
+        <option value="$MODULE_DIR$/src/sql/task2" />
+        <option value="$MODULE_DIR$/src/sql/task3" />
+        <option value="$MODULE_DIR$/src/sql/task4" />
+        <option value="$MODULE_DIR$/src/sql/task5" />
+      </list>
+    </option>
+  </component>
+</module>

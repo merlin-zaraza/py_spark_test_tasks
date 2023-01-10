@@ -1,0 +1,8 @@
+account_id;first_name;last_name;age;country;id;amount;account_type;transaction_date
+7253;Richard;Stewart;21;GB;7253;2405.09;Professional;2018-03-27
+7253;Richard;Stewart;21;GB;7253.0;-473.66;Professional;2021-06-02
+7253;Richard;Stewart;21;GB;7253.0;393.95;Professional;2011-12-15
+7253;Richard;Stewart;21;GB;7253.0;4122.36;Professional;2016-05-16
+7253;Richard;Stewart;21;GB;7253.0;560.44;Professional;2020-10-12
+7253;Richard;Stewart;21;GB;7253.0;6140.06;Professional;2019-10-02
+7253;Richard;Stewart;21;GB;7253.0;9226.54;Professional;2021-04-24

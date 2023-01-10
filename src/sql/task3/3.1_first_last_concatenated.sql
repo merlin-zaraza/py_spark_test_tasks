@@ -1,0 +1,2 @@
+Select  first_last_concat
+From accounts

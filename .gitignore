@@ -1,0 +1,8 @@
+log/*.log
+data/df/task*
+data/sql/task*
+data/*.csv
+workspace.xml
+*.crc
+_SUCCESS
+.pytest_cache
