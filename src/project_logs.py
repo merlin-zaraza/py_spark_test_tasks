@@ -117,7 +117,7 @@ class DefaultLogger:
         else:
             l_start_msg = "Executing "
 
-        l_start_msg += f'{in_function_name} '
+        l_start_msg += in_function_name
 
         if signature:
             l_start_msg += f"called with args {signature}"
