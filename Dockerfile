@@ -8,7 +8,7 @@ FROM openjdk:11.0.11-jre-slim-buster as builder
 ARG SPARK_VERSION
 ARG HADOOP_VERSION
 
-RUN apt-get update && apt-get install -y curl vim wget software-properties-common \
+RUN apt-get update && apt-get install -y curl vim wget dos2unix software-properties-common \
                                          ssh net-tools ca-certificates iputils-ping\
                                          python3 python3-pip python3-numpy \
                                          python3-matplotlib python3-scipy \
@@ -72,5 +72,8 @@ RUN mkdir -p $SPARK_TEST $SPARK_LOG
 COPY bash/start-spark.sh /
 COPY bash/.bashrc /root/.bashrc
 COPY bash/log4j.properties /opt/spark/conf/log4j.properties
+
+RUN find /opt -type f -print0 | xargs -0 dos2unix
+RUN dos2unix /root/.bashrc /
 
 CMD ["/bin/bash", "/start-spark.sh"]

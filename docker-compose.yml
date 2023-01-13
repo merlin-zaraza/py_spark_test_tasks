@@ -14,7 +14,7 @@ x-spark-worker:
 
 x-spark-common:
   &spark-common
-  image: ${DOCKER_SPARK_IMAGE:-'cluster-apache-spark:3.0.2'}
+  image: ${DOCKER_SPARK_IMAGE:-cluster-apache-spark:3.0.2}
   volumes:
     - ./src:/opt/spark-apps
     - ./data:/opt/spark-data
