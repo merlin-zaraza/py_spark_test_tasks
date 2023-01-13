@@ -16,7 +16,7 @@ typeset -l L_IN_SPARK_VERSION=${3:-3.0.2}
 typeset -l L_IN_HADOOP_VERSION=${4:-3.2}
 typeset -l L_IN_IMAGE_NAME=${5:-cluster-apache-spark}
 
-typeset -l l_proj_folder
+typeset -l l_spark_master_container
 
 export DOCKER_SPARK_IMAGE=$L_IN_IMAGE_NAME:$L_IN_SPARK_VERSION
 export SPARK_VERSION=$L_IN_SPARK_VERSION
@@ -47,13 +47,18 @@ function fn_run_command() {
 
 function fn_get_proj_folder() {
 
-  fn_run_command "l_proj_folder=\$( docker compose ls | egrep -v "^NAME" | tail -1 | cut -d ' ' -f1 )" \
+  fn_run_command "l_spark_master_container=\$( docker compose ps | grep '\-spark\-master\-1' | cut -d ' ' -f1 )" \
                  "Cannot get docker project name"\
                  "30"\
                  "n"
 }
 
 if [[ "$L_IN_BUILD_IMAGE" == 'y' ]]; then
+
+#  sudo apt-get update
+#  sudo apt-get install dos2unix
+#
+#  dos2unix ./*
 
   fn_run_command "docker compose down" \
                  "Cannot Stop project"\
@@ -90,6 +95,6 @@ if  [[ "$L_IN_RUN_TEST" != "n" ]]; then
   l_test_cmd="-c 'pytest /opt/spark-test $l_rerun_flag'"
 fi
 
-fn_run_command "docker container exec -it ${l_proj_folder}-spark-master-1 /bin/bash $l_test_cmd"  \
+fn_run_command "docker container exec -it ${l_spark_master_container} /bin/bash $l_test_cmd"  \
                "Cannot connect to the master"\
                "50"
