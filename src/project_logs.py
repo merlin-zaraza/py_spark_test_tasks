@@ -120,7 +120,7 @@ class DefaultLogger:
         l_start_msg += in_function_name
 
         if signature:
-            l_start_msg += f"called with args {signature}"
+            l_start_msg += f" called with args {signature}"
 
         self.step(l_start_msg, in_major_step)
 
