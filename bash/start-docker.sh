@@ -57,6 +57,7 @@ function fn_get_proj_folder() {
 
 if [[ "$L_IN_BUILD_IMAGE" == 'y' ]]; then
 
+  rm -f ~/.docker/config.json
 #  sudo apt-get update
 #  sudo apt-get install dos2unix
 #
