@@ -31,7 +31,7 @@ function fn_run_command() {
   typeset l_proc_exit_code=0
 
   echo "************************************************************"
-  echo "Running $l_in_command"
+  echo "Running: $l_in_command"
   echo "************************************************************"
 
   if ! eval $l_in_command ; then

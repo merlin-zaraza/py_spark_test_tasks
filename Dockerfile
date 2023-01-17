@@ -15,7 +15,6 @@ RUN apt-get update && apt-get install -y curl vim wget dos2unix software-propert
                                          python3-pandas python3-simpy
 
 RUN update-alternatives --install "/usr/bin/python" "python" "$(which python3)" 1
-RUN python3 -m pip install pytest-spark py4j
 
 # Fix the value of PYTHONHASHSEED
 # Note: this is needed when you use Python 3.3 or greater
@@ -51,9 +50,14 @@ SPARK_WORKER_PORT=7000 \
 SPARK_MASTER="spark://spark-master:7077" \
 SPARK_WORKLOAD="master" \
 PYSPARK_PYTHON=python3 \
+SERVICE_BASH=/opt/bash/service \
 PATH="$PATH:$SPARK_HOME/bin"
 
-ENV PYTHONPATH=$SPARK_HOME/python:$SPARK_APPS:$PYTHONPATH
+
+ENV PYTHONPATH=$SPARK_HOME/python:$SPARK_APPS:$PYTHONPATH \
+WEB_APP=$SPARK_APPS/web \
+WEB_APP_SCRIPT=app.py
+
 
 EXPOSE 8080 7077 6066
 
@@ -67,13 +71,17 @@ touch $SPARK_WORKER_LOG && \
 ln -sf /dev/stdout $SPARK_MASTER_LOG && \
 ln -sf /dev/stdout $SPARK_WORKER_LOG
 
-RUN mkdir -p $SPARK_TEST $SPARK_LOG
+RUN mkdir -p $SERVICE_BASH $SPARK_TEST $SPARK_LOG
 
-COPY bash/start-spark.sh /
 COPY bash/.bashrc /root/.bashrc
 COPY bash/log4j.properties /opt/spark/conf/log4j.properties
+COPY bash/start-spark.sh /opt/bash/start-spark.sh
+COPY bash/service/install_python_packages.sh /opt/bash/service/install_python_packages.sh
+COPY bash/service/requirements.txt /opt/bash/service/requirements.txt
+COPY src/web/start_app.sh /opt/spark-apps/web/start_app.sh
 
-RUN find /opt -type f -print0 | xargs -0 dos2unix
+RUN find /opt/spark-* -type f -print0 | xargs -0 dos2unix
 RUN dos2unix /root/.bashrc /
 
-CMD ["/bin/bash", "/start-spark.sh"]
+RUN ["/bin/bash", "/opt/bash/service/install_python_packages.sh" ]
+CMD ["/bin/bash", "-c" , "/opt/spark-apps/web/start_app.sh ; /opt/bash/start-spark.sh" ]

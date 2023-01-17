@@ -47,6 +47,8 @@
 > ./bash/start-docker.sh n y
 4. To run failed tests : 
 > ./bash/start-docker.sh n f
+5. To run tasks using UI, use link below in your browser :
+> http://localhost:5000/run_task 
 
 
 ## Project data

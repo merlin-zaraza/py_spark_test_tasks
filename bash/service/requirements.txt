@@ -1,0 +1,4 @@
+py4j==0.10.9.7
+pytest-spark==0.6.0
+flask==2.2.2
+waitress==2.1.2
