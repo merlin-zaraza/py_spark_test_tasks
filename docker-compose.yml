@@ -20,12 +20,14 @@ x-spark-common:
     - ./data:/opt/spark-data
     - ./test:/opt/spark-test
     - ./log:/opt/spark-log
+    - ./bash:/opt/bash
 
 services:
 
   spark-master:
     <<: *spark-common
     ports:
+      - "5000:5000"
       - "9090:8080"
       - "7077:7077"
       - "80:80"

@@ -1,0 +1,50 @@
+<head>
+    <title> Test task execution UI </title>
+    <link rel="stylesheet" type=text/css href="{{ url_for('static', filename='css/custom.css')}}">
+</head>
+
+<h1 align="center">
+    Test task execution UI
+</h1>
+
+<body>
+    <div align="center">
+
+        <form action='{{ url_for("main") }}' method="post">
+            <label for="task_id">Task ID :</label>
+            <input type="text" id="task_id" name="task_id" value="{{ task_id }}">
+
+            <label for="task_type">Choose task type:</label>
+            <select name="task_type" id="task_type">
+                <option value="sql">SQL</option>
+                <option value="df">Data Frame</option>
+            </select>
+
+            <br><br>
+            <button name="clicked_btn" value="run_rask" type="submit">Run task</button>
+            <br><br>
+
+            {% with errors = get_flashed_messages(category_filter=["error"]) %}
+                {% if errors %}
+
+                <div class=flash>
+                    {%- for msg in errors %}
+                    {{ msg }}
+                    {% endfor -%}
+                </div>
+
+                {% endif %}
+            {% endwith %}
+        </form>
+
+    </div>
+
+    {% if task_id %}
+        <div class="logging_window" >
+            <h2 align="center" >  Log for Task ID '{{ task_id }}' and task type '{{ task_type }}'</h2>
+            <iframe class="logging_window"
+                    src="{{ url_for('log_stream', task_id=task_id ) }}">
+            </iframe>
+        </div>
+    {% endif %}
+</body>
