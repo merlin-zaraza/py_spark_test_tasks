@@ -16,7 +16,7 @@
                 <label for="in_task">Task:</label>
                 <select name="in_task" id="in_task">
                     {%- for one_task in all_tasks_list %}
-                        {% if one_task == selected_task %}
+                        {% if one_task == in_task %}
                             <option selected> {{ one_task }}</option>
                         {% else %}
                             <option>{{ one_task }} </option>

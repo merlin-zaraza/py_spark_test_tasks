@@ -4,7 +4,7 @@ Flask App to execute test tasks
 import os
 
 from multiprocessing import Process
-from subprocess import Popen, PIPE
+from subprocess import Popen, PIPE, STDOUT
 
 from flask import Flask, request, render_template, Response, redirect, flash
 
@@ -72,13 +72,12 @@ def run_task_by_id(in_task: str, in_task_type: str):
                                       "-tt", in_task_type],
                                      cwd=os.environ.get("SPARK_APPS"),
                                      stdout=PIPE,
-                                     stderr=PIPE, )
+                                     stderr=STDOUT)
 
     return render_template(_main_html,
                            in_task=in_task,
                            in_task_type=in_task_type,
-                           all_tasks_list=LIST_ALL_TASKS_STR,
-                           selected_task=in_task)
+                           all_tasks_list=LIST_ALL_TASKS_STR)
 
 
 def flask_logger(in_task):
@@ -88,20 +87,15 @@ def flask_logger(in_task):
         yield f"Task {in_task} execution has not been started"
     else:
         l_subprocess = _SUBPROCESS[in_task]
+        l_line = l_subprocess.stdout.readline()
 
-        for l_output in [l_subprocess.stdout, l_subprocess.stderr]:
+        while l_line:
+            if l_line:
+                yield l_line.rstrip() + "\n".encode()
 
-            l_line = l_output.readline()
+            l_line = l_subprocess.stdout.readline()
 
-            while l_line:
-
-                if l_line:
-                    yield l_line.rstrip() + "\n".encode()
-
-                l_line = l_output.readline()
-
-            l_output.close()
-
+        l_subprocess.stdout.close()
         l_subprocess.wait()
 
         del _SUBPROCESS[in_task]
