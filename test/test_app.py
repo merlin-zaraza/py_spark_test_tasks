@@ -9,7 +9,7 @@ import pyspark_task_validator as tv
 
 from pyspark_task_validator import Task, TASK_TYPES_LIST
 
-DICT_ALL_GROUP_TASKS = t.fn_get_dict_with_all_tasks()
+DICT_ALL_GROUP_TASKS = {}
 
 l_test_task_types_tuple = "in_task_type", TASK_TYPES_LIST
 l_dict_tasks_tuple = "in_task_group_id,in_task_id", [
@@ -28,6 +28,10 @@ def fn_init_and_cleanup_test_session():
     # Will be executed before the first test
 
     tv.fn_clean_up_all_folders()
+
+    # Init Dataframes with src data
+    for k, v in t.fn_get_dict_with_all_tasks().items():
+        DICT_ALL_GROUP_TASKS.setdefault(k, v)
 
     yield tv.SPARK_SESSION
 
