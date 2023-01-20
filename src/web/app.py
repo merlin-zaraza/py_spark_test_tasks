@@ -27,45 +27,46 @@ def run_rask():
     if request.method == "GET":
         return render_template(_main_html)
 
-    task_id = request.form.get("task_id")
+    task = request.form.get("task")
     task_type = request.form.get("task_type")
 
-    return redirect(f"/run_task/{task_id}&{task_type}", code=307)
+    return redirect(f"/run_task/task={task}&task_type={task_type}", code=307)
 
 
-@app.route('/run_task/<task_id>&<task_type>', methods=["POST", "GET"])
-def run_task_by_id(task_id, task_type):
+@app.route('/run_task/task=<task>&task_type=<task_type>', methods=["POST", "GET"])
+def run_task_by_id(task: str, task_type: str):
     global _SUBPROCESS
 
-    input_error = ""
+    l_task = task.split(",")
 
-    if input_error:
-        flash(input_error, 'error')
-    else:
-        _SUBPROCESS.setdefault(task_id)
+    l_group_id = l_task[0]
+    l_task_id = l_task[1]
 
-        if _SUBPROCESS[task_id] is None:
-            os.environ["PYTHONUNBUFFERED"] = "1"
+    _SUBPROCESS.setdefault(task)
 
-            _SUBPROCESS[task_id] = Popen(['spark-submit', 'pyspark_task.py',
-                                          "-g", task_id,
-                                          "-tt", task_type],
-                                         cwd=os.environ.get("SPARK_APPS"),
-                                         stdout=PIPE,
-                                         stderr=PIPE)
+    if _SUBPROCESS[task] is None:
+        os.environ["PYTHONUNBUFFERED"] = "1"
+
+        _SUBPROCESS[task] = Popen(['spark-submit', 'pyspark_task.py',
+                                   "-g", l_group_id,
+                                   "-t", l_task_id,
+                                   "-tt", task_type],
+                                  cwd=os.environ.get("SPARK_APPS"),
+                                  stdout=PIPE,
+                                  stderr=PIPE, )
 
     return render_template(_main_html,
-                           task_id=task_id,
+                           task=task,
                            task_type=task_type)
 
 
-def flask_logger(task_id):
+def flask_logger(task):
     """creates logging information"""
 
-    if task_id not in _SUBPROCESS.keys():
-        yield f"Task {task_id} execution has not been started"
+    if task not in _SUBPROCESS.keys():
+        yield f"Task {task} execution has not been started"
     else:
-        l_subprocess = _SUBPROCESS[task_id]
+        l_subprocess = _SUBPROCESS[task]
 
         for l_output in [l_subprocess.stdout, l_subprocess.stderr]:
 
@@ -82,13 +83,13 @@ def flask_logger(task_id):
 
         l_subprocess.wait()
 
-        del _SUBPROCESS[task_id]
+        del _SUBPROCESS[task]
 
 
-@app.route("/log_stream/<task_id>", methods=["GET"])
-def log_stream(task_id):
+@app.route("/log_stream/<task>", methods=["GET"])
+def log_stream(task):
     """returns logging information"""
-    return Response(flask_logger(task_id), mimetype="text/plain", content_type="text/event-stream")
+    return Response(flask_logger(task), mimetype="text/plain", content_type="text/event-stream")
 
 
 def create_app():
