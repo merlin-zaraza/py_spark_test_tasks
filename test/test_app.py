@@ -3,17 +3,17 @@ Module for tests of pyspark task using sql and dataframe API
 """
 from typing import Dict
 
-# from pyspark.sql import SparkSession, DataFrame
-
 import pytest
 import pyspark_task as t
 import pyspark_task_validator as tv
 
 from pyspark_task_validator import Task, TASK_TYPES_LIST
 
+DICT_ALL_GROUP_TASKS = t.fn_get_dict_with_all_tasks()
+
 l_test_task_types_tuple = "in_task_type", TASK_TYPES_LIST
 l_dict_tasks_tuple = "in_task_group_id,in_task_id", [
-    task for task, sql in t.DICT_TEST_TASKS_SQL.items() if task.group_id <= 4
+    task for task in t.LIST_ALL_TASKS if task.group_id <= 4
     # (1, 1),
     # (2, 5)
 ]
@@ -29,7 +29,7 @@ def fn_init_and_cleanup_test_session():
 
     tv.fn_clean_up_all_folders()
 
-    yield t.SPARK_SESSION
+    yield tv.SPARK_SESSION
 
     # Will be executed after last
     tv.fn_clean_up_all_folders()
@@ -106,7 +106,7 @@ def test_task_group_invalid_parameters(in_task_group_id, in_task_id, in_task_typ
     tv.fn_run_task_type(in_task_group_id=in_task_group_id,
                         in_task_id=in_task_id,
                         in_task_type=in_task_type,
-                        in_dict_all_group_tasks=t.DICT_ALL_GROUP_TASKS)
+                        in_dict_all_group_tasks=DICT_ALL_GROUP_TASKS)
 
 
 @pytest.mark.spark
@@ -123,7 +123,7 @@ def test_task_data(in_task_group_id, in_task_id, in_task_type):
     tv.fn_run_test_task(in_task_group_id=in_task_group_id,
                         in_task_id=in_task_id,
                         in_task_type=in_task_type,
-                        in_dict_all_group_tasks=t.DICT_ALL_GROUP_TASKS,
+                        in_dict_all_group_tasks=DICT_ALL_GROUP_TASKS,
                         in_test_task_filter=DICT_TEST_TASK_FILTERS)
 
 

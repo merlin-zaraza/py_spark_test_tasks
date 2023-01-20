@@ -3,26 +3,44 @@
     <link rel="stylesheet" type=text/css href="{{ url_for('static', filename='css/custom.css')}}">
 </head>
 
-<h1 align="center">
-    Test task execution UI
-</h1>
+<br><br>
+<h1 align="center">Test task execution UI</h1>
 
 <body>
     <div align="center">
 
         <form action='{{ url_for("main") }}' method="post">
-            <label for="task_id">Task ID :</label>
-            <input type="text" id="task_id" name="task_id" value="{{ task_id }}">
 
-            <label for="task_type">Choose task type:</label>
-            <select name="task_type" id="task_type">
-                <option value="sql">SQL</option>
-                <option value="df">Data Frame</option>
-            </select>
+                <label for="in_task">Task:</label>
+                <select name="in_task" id="in_task">
+                    {%- for one_task in all_tasks_list %}
+                        {% if one_task == in_task %}
+                            <option selected> {{ one_task }}</option>
+                        {% else %}
+                            <option>{{ one_task }} </option>
+                        {% endif %}
+                    {% endfor -%}
+                </select>
 
-            <br><br>
-            <button name="clicked_btn" value="run_rask" type="submit">Run task</button>
-            <br><br>
+                <label for="in_task_type">Task type:</label>
+                <select name="in_task_type" id="in_task_type" >
+                    {% if in_task_type == "df" %}
+                        <option selected value="sql">SQL</option>
+                    {% else %}
+                        <option value="sql">SQL</option>
+                    {% endif %}
+
+                    {% if in_task_type == "df" %}
+                        <option selected value="df">Dataframe</option>
+                    {% else %}
+                        <option value="df">Dataframe</option>
+                    {% endif %}
+
+                </select>
+
+                <br><br>
+                <button name="clicked_btn" value="run_rask" type="submit">Run task</button>
+                <br><br>
 
             {% with errors = get_flashed_messages(category_filter=["error"]) %}
                 {% if errors %}
@@ -39,11 +57,11 @@
 
     </div>
 
-    {% if task_id %}
+    {% if in_task %}
         <div class="logging_window" >
-            <h2 align="center" >  Log for Task ID '{{ task_id }}' and task type '{{ task_type }}'</h2>
+            <h2 align="center" >  Log for Task '{{ in_task }}' and type '{{ in_task_type }}'</h2>
             <iframe class="logging_window"
-                    src="{{ url_for('log_stream', task_id=task_id ) }}">
+                    src="{{ url_for('log_stream', in_task=in_task ) }}">
             </iframe>
         </div>
     {% endif %}
