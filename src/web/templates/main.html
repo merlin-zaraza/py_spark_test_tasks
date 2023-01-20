@@ -1,12 +1,10 @@
 <head>
-    <title> Test in_task execution UI </title>
+    <title> Test task execution UI </title>
     <link rel="stylesheet" type=text/css href="{{ url_for('static', filename='css/custom.css')}}">
 </head>
 
 <br><br>
-<h1 align="center">
-    Test in_task execution UI
-</h1>
+<h1 align="center">Test task execution UI</h1>
 
 <body>
     <div align="center">
@@ -41,7 +39,7 @@
                 </select>
 
                 <br><br>
-                <button name="clicked_btn" value="run_rask" type="submit">Run in_task</button>
+                <button name="clicked_btn" value="run_rask" type="submit">Run task</button>
                 <br><br>
 
             {% with errors = get_flashed_messages(category_filter=["error"]) %}
