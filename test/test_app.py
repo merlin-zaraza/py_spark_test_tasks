@@ -13,7 +13,7 @@ DICT_ALL_GROUP_TASKS = t.fn_get_dict_with_all_tasks()
 
 l_test_task_types_tuple = "in_task_type", TASK_TYPES_LIST
 l_dict_tasks_tuple = "in_task_group_id,in_task_id", [
-    task for task, sql in t.DICT_TEST_TASKS_SQL.items() if task.group_id <= 4
+    task for task in t.LIST_ALL_TASKS if task.group_id <= 4
     # (1, 1),
     # (2, 5)
 ]

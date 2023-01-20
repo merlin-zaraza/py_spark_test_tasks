@@ -1,7 +1,7 @@
 """
 Package that defines realization of test tasks and executes them
 """
-import sys
+
 from typing import Dict, List
 from pyspark.sql import functions as f, DataFrame
 
@@ -28,8 +28,7 @@ _l_dict_test_sql = {
 }
 
 DICT_TEST_TASKS_SQL = {k: f"{k.group_id}.{k.task_id}_{v}" for k, v in _l_dict_test_sql.items()}
-DICT_ALL_GROUP_TASKS = {}
-TEST_TASK_FUNCTION_NAME = "fn_get_task_def_list"
+LIST_ALL_TASKS = [k for k, v in _l_dict_test_sql.items()]
 
 
 def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDef]]:
@@ -273,7 +272,7 @@ def fn_get_dict_with_all_tasks() -> Dict[int, List[TaskDef]]:
 
     for l_one_task_group_id in {k.group_id for k, v in DICT_TEST_TASKS_SQL.items()}:
 
-        fn_get_task_def_list = locals()[f'{TEST_TASK_FUNCTION_NAME}{l_one_task_group_id}']
+        fn_get_task_def_list = locals()[f'fn_get_task_def_list{l_one_task_group_id}']
 
         l_task_df_list: List[TaskDef] = fn_get_task_def_list()
 
