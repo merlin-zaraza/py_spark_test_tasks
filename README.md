@@ -4,7 +4,15 @@
 1. Use spark sql and dataframes API for data processing 
    1. Write sql code in all src/sql/task*/
    2. Write pyspark code for all dataframes in pyspark_task.py 
-   3. Make sure that all test passed, 
+   3. Optimize imports (Spark session need to be created during some function invocation not during import) for
+      1. pyspark_task.py 
+      2. test_app.py
+   4. Add parameters to the test_app.py, so you can invoke subsets of tests for
+      1. Data Frame
+      2. SQLs
+      3. Task group
+      4. Particular Task
+   5. Make sure that all test passed, 
       1. run command 
       > ./bash/start-docker.sh y y
       2. or in master container execute 
