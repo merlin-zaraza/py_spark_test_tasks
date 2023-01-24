@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 l_pid=$(pidof -x python3 $WEB_APP_SCRIPT)
 
