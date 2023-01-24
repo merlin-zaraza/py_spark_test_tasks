@@ -27,7 +27,7 @@ services:
   spark-master:
     <<: *spark-common
     ports:
-      - "5000:5000"
+      - "8000:8000"
       - "9090:8080"
       - "7077:7077"
       - "80:80"
@@ -42,7 +42,7 @@ services:
       SPARK_LOCAL_IP: spark-worker-a
     ports:
       - "9091:8080"
-      - "7000:7000"
+      - "7001:7000"
 
   spark-worker-b:
     <<: *spark-common
@@ -51,7 +51,7 @@ services:
       SPARK_LOCAL_IP: spark-worker-b
     ports:
       - "9092:8080"
-      - "7001:7000"
+      - "7002:7000"
 
 #  demo-database:
 #    image: postgres:11.7-alpine

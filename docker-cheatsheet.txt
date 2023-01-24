@@ -1,6 +1,11 @@
 docker build --build-arg SPARK_VERSION=3.0.2 --build-arg HADOOP_VERSION=3.2 -t cluster-apache-spark:3.0.2 ./
+
+# for normal use
 docker compose up -d
-docker container exec -it pysparktesttasks-spark-master-1 /bin/bash
+# for debug run in normal mode
+docker compose up
+
+docker container exec -it py_spark_test_tasks-spark-master-1 /bin/bash
 
 docker compose down
 docker compose config

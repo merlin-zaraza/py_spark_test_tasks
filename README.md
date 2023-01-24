@@ -13,7 +13,7 @@
       3. Task group
       4. Particular Task
    5. Make sure that all test passed, 
-      1. run command 
+      1. run commands 
       > ./bash/start-docker.sh y y
       2. or in master container execute 
       > pytest /opt/spark-test
@@ -47,8 +47,18 @@
     - SPARK_EXECUTOR_MEMORY : 1G * 3
 
 ## How work with project environment:
-1. First time execution needs flag L_IN_BUILD_IMAGE = "y" :
-> ./bash/start-docker.sh y 
+1. First time execution needs  :
+   1. Permissions
+   >  chmod -R 755 ./*
+   2. Docker image build
+   > ./bash/start-docker.sh y
+   3. If bash scripts doesn't work for you run commands below
+      > docker build --build-arg SPARK_VERSION=3.0.2 --build-arg HADOOP_VERSION=3.2 -t cluster-apache-spark:3.0.2 ./ 
+      > 
+      > docker compose up -d
+      > 
+      > docker container exec -it py_spark_test_tasks-spark-master-1 /bin/bash 
+      
 2. To connect to docker container :
 > ./bash/start-docker.sh n
 3. To run all tests : 
@@ -56,7 +66,7 @@
 4. To run failed tests : 
 > ./bash/start-docker.sh n f
 5. To run tasks using UI, use link below in your browser :
-> http://localhost:5000/run_task 
+> http://localhost:8000/run_task 
 
 
 ## Project data
