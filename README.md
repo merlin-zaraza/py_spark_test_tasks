@@ -75,9 +75,9 @@ Expected outputs:
 * test/task../expected_output/..
 
 ## Project realisation files
-* src/pyspark_sql.py - general logic for tasks implementation using sql/df together with testing framework
-* src/pyspark_dataframe.py - dataframes definition
-* src/sql/.. - sql files with the same logic as for dataframes 
+* src/pyspark_task.py - dataframes and sql definition 
+* src/pyspark_task_validator.py - module to invoke and test dataframes and sql definition
+* src/sql/.. - sql files with the same logic as for dataframes
 
 * test/test_app.py - all tests definition
 * bash/start-docker.sh - file to start project
