@@ -47,8 +47,18 @@
     - SPARK_EXECUTOR_MEMORY : 1G * 3
 
 ## How work with project environment:
-1. First time execution needs flag L_IN_BUILD_IMAGE = "y" :
-> ./bash/start-docker.sh y 
+1. First time execution needs  :
+   1. Permissions
+   >  chmod -R 755 ./*
+   2. Docker image build
+   > ./bash/start-docker.sh y
+   3. If bash scripts doesn't work for you run commands below
+      > docker build --build-arg SPARK_VERSION=3.0.2 --build-arg HADOOP_VERSION=3.2 -t cluster-apache-spark:3.0.2 ./ 
+      > 
+      > docker compose up -d
+      > 
+      > docker container exec -it py_spark_test_tasks-spark-master-1 /bin/bash 
+      
 2. To connect to docker container :
 > ./bash/start-docker.sh n
 3. To run all tests : 
@@ -78,6 +88,7 @@ Expected outputs:
 * src/pyspark_task.py - dataframes and sql definition 
 * src/pyspark_task_validator.py - module to invoke and test dataframes and sql definition
 * src/sql/.. - sql files with the same logic as for dataframes
+* src/web/.. - web UI on flask for task invocation
 
 * test/test_app.py - all tests definition
 * bash/start-docker.sh - file to start project
