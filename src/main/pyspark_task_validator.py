@@ -18,8 +18,9 @@ _APP_NAME = "py_spark_task_validator"
 
 STR_TRUE: str = "true"
 FOLDER_DATA: str = os.environ.get("SPARK_DATA", "/opt/spark-data")
-FOLDER_APPS: str = os.environ.get("SPARK_APPS", "/opt/spark-apps")
-FOLDER_TEST: str = os.environ.get("SPARK_TEST", "/opt/spark-test")
+FOLDER_APPS: str = os.environ.get("SPARK_APPS", "/opt/spark-apps/main")
+FOLDER_APPS_RESOURCES: str = FOLDER_APPS + "/resources"
+FOLDER_TEST: str = os.environ.get("SPARK_TEST", "/opt/spark-apps/test")
 FOLDER_LOG: str = os.environ.get("SPARK_LOG", "/opt/spark-log")
 FOLDER_TABLES: str = f"{FOLDER_DATA}/tables"
 SPARK_SESSION: SparkSession = None
@@ -53,7 +54,7 @@ def fn_get_sql_task_folder_path(in_task_group_id: int) -> str:
     :param in_task_group_id:
     :return: path to the folder with SQLs
     """
-    return f"{FOLDER_APPS}/sql/task{in_task_group_id}"
+    return f"{FOLDER_APPS_RESOURCES}/sql/task{in_task_group_id}"
 
 
 class TaskDef:

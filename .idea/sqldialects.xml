@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="SqlDialectMappings">
-    <file url="file://$PROJECT_DIR$/src/sql/task2/2.5_total_earnings_pivot.sql" dialect="SparkSQL" />
+    <file url="file://$PROJECT_DIR$/src/main/resources/sql/task2/2.5_total_earnings_pivot.sql" dialect="SparkSQL" />
     <file url="PROJECT" dialect="SparkSQL" />
   </component>
 </project>
