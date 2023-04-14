@@ -66,7 +66,9 @@
 4. To run failed tests : 
 > ./bash/start-docker.sh n f
 5. To run tasks using UI, use link below in your browser :
-> http://localhost:8000/run_task 
+> http://localhost:8000/run_task
+6. Spark Master UI
+> http://localhost:9090/
 
 
 ## Project data

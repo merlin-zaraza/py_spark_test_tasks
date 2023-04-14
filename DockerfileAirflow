@@ -1,0 +1,38 @@
+FROM apache/airflow:2.3.2 as buildereixt
+
+USER root
+
+RUN  apt-get update \
+  && apt-get install -y --no-install-recommends \
+         vim          \
+         iputils-ping \
+         procps       \
+         curl         \
+         wget         \
+         dos2unix     \
+         netcat       \
+         ssh          \
+         iputils-ping
+
+# enable SSH between containers
+RUN mkdir -p /var/run/sshd && \
+    chmod 0755 /var/run/sshd && \
+    echo 'airflow:airflow' | chpasswd && \
+    usermod -aG sudo airflow
+
+# for reducing image size comment out
+#RUN     apt-get autoremove -yqq --purge \
+#     && apt-get clean                   \
+#     && rm -rf /var/lib/apt/lists/*
+
+CMD ["/usr/sbin/sshd", "-D"]
+EXPOSE 22
+
+USER airflow
+RUN pip install apache-airflow-providers-apache-spark
+
+
+
+
+
+

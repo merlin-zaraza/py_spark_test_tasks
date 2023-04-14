@@ -90,8 +90,6 @@ def fn_get_test_task_filter_dict() -> Dict[Task, str]:
 
 DICT_TEST_TASK_FILTERS = fn_get_test_task_filter_dict()
 
-
-@pytest.mark.spark
 @pytest.mark.parametrize("in_task_group_id,in_task_id",
                          [
                              pytest.param(1, 3, marks=pytest.mark.xfail),
@@ -113,7 +111,7 @@ def test_task_group_invalid_parameters(in_task_group_id, in_task_id, in_task_typ
                         in_dict_all_group_tasks=DICT_ALL_GROUP_TASKS)
 
 
-@pytest.mark.spark
+
 @pytest.mark.parametrize(*l_dict_tasks_tuple)
 @pytest.mark.parametrize(*l_test_task_types_tuple)
 def test_task_data(in_task_group_id, in_task_id, in_task_type):
@@ -131,7 +129,7 @@ def test_task_data(in_task_group_id, in_task_id, in_task_type):
                         in_test_task_filter=DICT_TEST_TASK_FILTERS)
 
 
-@pytest.mark.spark
+
 @pytest.mark.parametrize("in_task_group_id", [1])
 def test_fn_run_task_group_sql(in_task_group_id):
     """

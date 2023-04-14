@@ -1,4 +1,11 @@
 docker build --build-arg SPARK_VERSION=3.0.2 --build-arg HADOOP_VERSION=3.2 -t cluster-apache-spark:3.0.2 ./
+docker build -f DockerfileAirflow  -t airflow-with-spark:1.0.0 ./
+
+docker compose -f docker-compose-with-airflow.yaml up -d
+docker compose -f docker-compose.yml up -d
+
+docker compose -f docker-compose-with-airflow.yaml down
+docker compose -f docker-compose.yml down
 
 # for normal use
 docker compose up -d
@@ -6,6 +13,51 @@ docker compose up -d
 docker compose up
 
 docker container exec -it py_spark_test_tasks-spark-master-1 /bin/bash
+docker container exec -it py_spark_test_tasks-airflow-worker-1 /bin/bash
+docker container exec -it py_spark_test_tasks-spark-worker-a-1 /bin/bash
+docker container exec -it py_spark_test_tasks-spark-worker-b-1 /bin/bash
 
 docker compose down
 docker compose config
+
+cd /mnt/c/Users/ubart/IdeaProjects/py_spark_test_tasks
+export AIRFLOW_IMAGE_NAME=airflow-with-spark:1.0.0
+
+docker compose ps
+docker system prune
+
+
+Procedure
+    Stop the container(s) using the following command:
+    docker-compose down
+
+    Delete all containers using the following command:
+    docker rm -f $(docker ps -a -q)
+
+    Delete all volumes using the following command:
+    docker volume rm $(docker volume ls -q)
+
+    Restart the containers using the following command:
+    docker-compose up -d
+
+There isn't a password for any of the users in the container -- there generally isn't in docker containers.
+    docker exec -u root -ti my_airflow_container bash to get a root shell inside a running container, or
+    docker run --rm -ti -u root --entrypoint bash puckel/airflow to start a new container as root.
+
+ssh root@spark-master
+ssh root@spark-worker-a
+ssh root@spark-worker-b
+ssh airflow@spark-master
+ssh airflow@spark-worker-a
+ssh airflow@spark-worker-b
+
+chmod -v 700 ~/.ssh
+chmod -v 600 ~/.ssh/id_rsa*
+
+ls -la ~/.ssh
+ls -la ~/.ssh/id_rsa*
+
+#ssh -i /root/.ssh/id_rsa.pub spark-worker-a
+#ssh root@spark-master
+#ssh root@spark-worker-a
+

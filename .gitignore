@@ -1,4 +1,5 @@
-log/*.log
+airflow/logs/*
+log/
 data/df/task*
 data/sql/task*
 data/*.csv

@@ -9,6 +9,12 @@ if [ "$SPARK_WORKLOAD" == "worker" ]; then
     $l_spark_class org.apache.spark.deploy.worker.Worker \
       --webui-port $SPARK_WORKER_WEBUI_PORT $SPARK_MASTER >> $SPARK_WORKER_LOG
 elif [ "$SPARK_WORKLOAD" == "master" ]; then
+
+    if [[ -f /root/.ssh/id_rsa  ]]; then
+      mkdir -p /home/airflow/.ssh
+      cp /root/.ssh/* /home/airflow/.ssh
+    fi
+
     export SPARK_MASTER_HOST=`hostname`
 
     $l_spark_class org.apache.spark.deploy.master.Master \
