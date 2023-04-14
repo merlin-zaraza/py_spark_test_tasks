@@ -2,7 +2,7 @@
 ## Goals :
 ### Easy Mode
 1. Use spark sql and dataframes API for data processing 
-   1. Write sql code in all src/sql/task*/
+   1. Write sql code in all src/main/resources/sql/task*/
    2. Write pyspark code for all dataframes in pyspark_task.py 
    3. Optimize imports (Spark session need to be created during some function invocation not during import) for
       1. pyspark_task.py 
@@ -16,7 +16,7 @@
       1. run commands 
       > ./bash/start-docker.sh y y
       2. or in master container execute 
-      > pytest /opt/spark-test
+      > pytest /opt/spark-apps/test
 
 ### Hard Mode
 1. Implement easy mode 

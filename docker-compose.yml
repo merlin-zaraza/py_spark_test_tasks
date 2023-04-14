@@ -18,7 +18,7 @@ x-spark-common:
   volumes:
     - ./src:/opt/spark-apps
     - ./data:/opt/spark-data
-    - ./test:/opt/spark-test
+    - ./src/test:/opt/spark-apps/test
     - ./log:/opt/spark-log
     - ./bash:/opt/bash
 
