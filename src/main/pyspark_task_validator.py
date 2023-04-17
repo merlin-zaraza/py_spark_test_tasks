@@ -17,6 +17,8 @@ Task = namedtuple("Task", "group_id task_id")
 _APP_NAME = "py_spark_task_validator"
 
 STR_TRUE: str = "true"
+
+SPARK_MASTER: str = os.getenv("SPARK_MASTER", "spark://spark-master:7077")
 FOLDER_DATA: str = os.environ.get("SPARK_DATA", "/opt/spark-data")
 FOLDER_APPS: str = os.environ.get("SPARK_APPS", "/opt/spark-apps/main")
 FOLDER_APPS_RESOURCES: str = FOLDER_APPS + "/resources"
@@ -400,7 +402,9 @@ def fn_get_or_create_spark_session():
     Function to init spark session
     """
     global SPARK_SESSION
-    SPARK_SESSION = SparkSession.builder.appName(_APP_NAME).getOrCreate()
+    SPARK_SESSION = SparkSession.builder  \
+        .master(SPARK_MASTER) \
+        .appName(_APP_NAME).getOrCreate()
 
     fn_init_tables()
 
