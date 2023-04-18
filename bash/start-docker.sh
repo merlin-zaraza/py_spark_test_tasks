@@ -10,13 +10,16 @@
 set -eEu
 set -o pipefail
 
-declare -l L_IN_BUILD_IMAGE=${1:-n}
-declare -l L_IN_RUN_TEST=${2:-n}
-declare -l L_IN_SPARK_VERSION=${3:-3.0.2}
-declare -l L_IN_HADOOP_VERSION=${4:-3.2}
-declare -l L_IN_IMAGE_NAME=${5:-cluster-apache-spark}
+# syntax below is not compatible with some Mac OS thus using tr '[:upper:]' '[:lower:]'
+#declare -l
 
-declare -l l_spark_master_container
+declare L_IN_BUILD_IMAGE=$( tr '[:upper:]' '[:lower:]' <<< "${1:-n}" )
+declare L_IN_RUN_TEST=$( tr '[:upper:]' '[:lower:]' <<< "${2:-n}" )
+declare L_IN_SPARK_VERSION=$( tr '[:upper:]' '[:lower:]' <<< "${3:-3.0.2}" )
+declare L_IN_HADOOP_VERSION=$( tr '[:upper:]' '[:lower:]' <<< "${4:-3.2}" )
+declare L_IN_IMAGE_NAME=$( tr '[:upper:]' '[:lower:]' <<< "${5:-cluster-apache-spark}" )
+
+declare l_spark_master_container
 
 export DOCKER_SPARK_IMAGE=$L_IN_IMAGE_NAME:$L_IN_SPARK_VERSION
 export SPARK_VERSION=$L_IN_SPARK_VERSION
@@ -26,7 +29,7 @@ function fn_run_command() {
   declare l_in_command=${1:?}
   declare l_in_err_msg=${2:?}
   declare l_in_err_code=${3:-1}
-  declare -l l_in_exit=${4:-y}
+  declare l_in_exit=$( tr '[:upper:]' '[:lower:]' <<< "${4:-y}" )
 
   declare l_proc_exit_code=0
 
