@@ -2,6 +2,8 @@ FROM apache/airflow:2.3.2 as buildereixt
 
 USER root
 
+RUN echo 'root:root' | chpasswd
+
 RUN  apt-get update \
   && apt-get install -y --no-install-recommends \
          vim          \
@@ -28,8 +30,19 @@ RUN mkdir -p /var/run/sshd && \
 CMD ["/usr/sbin/sshd", "-D"]
 EXPOSE 22
 
+#RUN mkdir -p /home/airflow/.ssh
+#COPY bash/service/.ssh/* /home/airflow/.ssh
+
 USER airflow
 RUN pip install apache-airflow-providers-apache-spark
+RUN mkdir -p /home/airflow/.ssh
+COPY bash/service/.ssh/* /home/airflow/.ssh
+
+USER root
+RUN chmod 600 /home/airflow/.ssh/id_rsa && \
+    chown airflow /home/airflow/.ssh/*
+
+
 
 
 

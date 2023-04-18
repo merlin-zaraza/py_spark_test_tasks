@@ -8,6 +8,8 @@ FROM openjdk:11.0.11-jre-slim-buster as builder
 ARG SPARK_VERSION
 ARG HADOOP_VERSION
 
+#RUN echo 'root:root' | chpasswd
+
 RUN  apt-get update                \
   && apt-get install -y            \
         curl                       \
