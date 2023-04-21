@@ -31,10 +31,18 @@ RUN wget --no-verbose -O apache-spark.tgz "https://archive.apache.org/dist/spark
 && tar -xf apache-spark.tgz -C /opt/spark --strip-components=1 \
 && rm apache-spark.tgz
 
+# Add user airflow
+RUN useradd -m airflow
+USER airflow
 # Generate ssh key
+RUN mkdir ~/.ssh && \
+    chown airflow:airflow ~/.ssh && \
+    chmod 700 ~/.ssh
 RUN ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
 RUN cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
 # Start ssh daemon
+USER root
 RUN service ssh start
 
 # Apache spark environment
