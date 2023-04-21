@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y curl vim wget dos2unix software-propert
                                          ssh net-tools ca-certificates iputils-ping\
                                          python3 python3-pip python3-numpy \
                                          python3-matplotlib python3-scipy \
-                                         python3-pandas python3-simpy
+                                         python3-pandas python3-simpy \
+                                         openssh-server openssh-client
 
 RUN update-alternatives --install "/usr/bin/python" "python" "$(which python3)" 1
 
@@ -30,6 +31,11 @@ RUN wget --no-verbose -O apache-spark.tgz "https://archive.apache.org/dist/spark
 && tar -xf apache-spark.tgz -C /opt/spark --strip-components=1 \
 && rm apache-spark.tgz
 
+# Generate ssh key
+RUN ssh-keygen -t rsa -N "" -f ~/.ssh/id_rsa
+RUN cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+# Start ssh daemon
+RUN service ssh start
 
 # Apache spark environment
 FROM builder as apache-spark
@@ -59,7 +65,7 @@ WEB_APP=$SPARK_APPS/web \
 WEB_APP_SCRIPT=app.py
 
 
-EXPOSE 8080 7077 6066
+EXPOSE 22 8080 7077 6066
 
 
 ARG SPARK_VERSION

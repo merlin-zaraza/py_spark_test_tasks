@@ -1,4 +1,7 @@
 #!/bin/bash
+
+/usr/sbin/sshd -D &
+
 . "/opt/spark/bin/load-spark-env.sh"
 
 l_spark_class='/opt/spark/bin/spark-class'
