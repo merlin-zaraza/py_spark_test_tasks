@@ -84,10 +84,11 @@ COPY bash/log4j.properties /opt/spark/conf/log4j.properties
 COPY bash/start-spark.sh /opt/bash/start-spark.sh
 COPY bash/service/install_python_packages.sh /opt/bash/service/install_python_packages.sh
 COPY bash/service/requirements.txt /opt/bash/service/requirements.txt
+COPY bash/service/start_sshd.sh /opt/bash/service/start_sshd.sh
 COPY src/main/web/start_app.sh /opt/spark-apps/main/web/start_app.sh
 
 RUN find /opt/spark-* -type f -print0 | xargs -0 dos2unix
 RUN dos2unix /root/.bashrc /
 
 RUN ["/bin/bash", "/opt/bash/service/install_python_packages.sh" ]
-CMD ["/bin/bash", "-c" , "/opt/spark-apps/main/web/start_app.sh ; /opt/bash/start-spark.sh" ]
+CMD ["/bin/bash", "-c" , "/opt/bash/service/start_sshd.sh; /opt/spark-apps/main/web/start_app.sh; /opt/bash/start-spark.sh" ]
