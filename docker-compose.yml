@@ -9,9 +9,6 @@ x-spark-worker:
     SPARK_EXECUTOR_MEMORY : 1G
     SPARK_WORKLOAD : worker
 
-  depends_on:
-    - spark-master
-
 x-spark-common:
   &spark-common
   image: ${DOCKER_SPARK_IMAGE:-cluster-apache-spark:3.0.2}
@@ -30,10 +27,14 @@ services:
       - "8000:8000"
       - "9090:8080"
       - "7077:7077"
-      - "80:80"
     environment:
       - SPARK_LOCAL_IP=spark-master
       - SPARK_WORKLOAD=master
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://spark-master:8080" ]
+      interval: 5s
+      timeout: 3s
+      retries: 3
 
   spark-worker-a:
     <<: *spark-common
@@ -43,6 +44,9 @@ services:
     ports:
       - "9091:8080"
       - "7001:7000"
+    depends_on:
+      spark-master:
+        condition: service_healthy
 
   spark-worker-b:
     <<: *spark-common
@@ -52,6 +56,9 @@ services:
     ports:
       - "9092:8080"
       - "7002:7000"
+    depends_on:
+      spark-master:
+        condition: service_healthy
 
 #  demo-database:
 #    image: postgres:11.7-alpine
